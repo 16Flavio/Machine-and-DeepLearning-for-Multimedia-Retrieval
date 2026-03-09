@@ -73,11 +73,63 @@ Sur GitHub, ouvrez une **Pull Request** pour fusionner votre branche vers `main`
 
 ---
 
-## 3. Organisation du travail : Roadmap et Validation
+## 3. Gestion des dépendances avec `uv`
+
+Pour garantir que nos environnements locaux (ceux de Marie et Flavio) et notre conteneur Docker sur le Cloud utilisent exactement les mêmes versions de bibliothèques, nous utilisons **`uv`**. C'est un gestionnaire de paquets et d'environnements ultra-rapide (écrit en Rust) qui crée un fichier `uv.lock` robuste.
+
+### Installation de `uv` (à faire une seule fois)
+
+Si vous ne l'avez pas encore installé sur votre machine locale :
+
+* **Mac/Linux :** `curl -LsSf https://astral.sh/uv/install.sh | sh`
+* **Windows :** `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+
+### Initialiser et activer l'environnement
+
+À la racine du projet, créez l'environnement virtuel :
+
+```bash
+uv venv
+
+```
+
+Puis activez-le (à faire à chaque fois que vous ouvrez un nouveau terminal pour travailler sur le projet) :
+
+* **Mac/Linux :** `source .venv/bin/activate`
+* **Windows :** `.venv\Scripts\activate`
+
+### Ajouter de nouvelles dépendances
+
+Pour installer un nouveau package (cela mettra automatiquement à jour nos fichiers `pyproject.toml` et `uv.lock`) :
+
+```bash
+uv add faiss-cpu flask numpy
+
+```
+
+*⚠️ Attention pour PyTorch :* L'installation de PyTorch (obligatoire pour nos descripteurs CNN et ViT ) nécessite souvent de spécifier la source pour exploiter correctement votre GPU ou CPU. Utilisez cette commande pour bien cibler la version :
+
+```bash
+uv add torch torchvision --index-url https://download.pytorch.org/whl/cu118
+
+```
+
+### Synchroniser le projet après un `git pull`
+
+Si votre binôme a ajouté de nouvelles dépendances sur GitHub, mettez à jour votre environnement local en une seule commande :
+
+```bash
+uv sync
+
+```
+
+---
+
+## 4. Organisation du travail : Roadmap et Validation
 
 Voici l'ordre chronologique recommandé pour développer le projet pas à pas.
 
-Phase 1 : Partie I - Moteur Unimodal (Images) 
+### Phase 1 : Partie I - Moteur Unimodal (Images)
 
 * **Par où commencer :** Le notebook `notebooks/01_descriptor_tests.ipynb`.
 * **Tâches :**
@@ -92,8 +144,8 @@ Phase 1 : Partie I - Moteur Unimodal (Images)
 
 
 
-* 
-**Validation :** * L'utilisateur peut choisir la mesure de similarité (Euclidienne, FLANN, etc.).
+* **Validation :**
+* L'utilisateur peut choisir la mesure de similarité (Euclidienne, FLANN, etc.).
 
 
 * Tester les requêtes spécifiques au groupe 05 (R1 à R15 pour les classes 0, 2, 4, 6, 8).
@@ -105,7 +157,7 @@ Phase 1 : Partie I - Moteur Unimodal (Images)
 
 
 
-Phase 2 : Partie II - Moteur Multimodal 
+### Phase 2 : Partie II - Moteur Multimodal
 
 * 
 **Par où commencer :** `notebooks/02_clip_exploration.ipynb` et la base de données Flickr8K (8 000 images, 5 textes par image).
@@ -123,8 +175,8 @@ Phase 2 : Partie II - Moteur Multimodal
 
 
 
-* 
-**Validation :** * Réaliser des requêtes texte-vers-image et image-vers-texte.
+* **Validation :**
+* Réaliser des requêtes texte-vers-image et image-vers-texte.
 
 
 * Évaluer les résultats avec Precision, Recall et mAP sur 3 images et 3 textes différents.
@@ -137,7 +189,7 @@ Phase 2 : Partie II - Moteur Multimodal
 
 
 
-Phase 3 : Partie III - Déploiement Cloud (SaaS) 
+Phase 3 : Partie III - Déploiement Cloud (SaaS) (Optionnel) 
 
 * **Par où commencer :** `src/web_app/app.py`.
 * **Tâches :**
@@ -169,4 +221,3 @@ Phase 3 : Partie III - Déploiement Cloud (SaaS)
 
 * 
 **Présentation :** Préparation des slides pour la présentation en présentiel du 15 juin 2026 (15 minutes de présentation, 5 à 10 minutes de questions).
-
