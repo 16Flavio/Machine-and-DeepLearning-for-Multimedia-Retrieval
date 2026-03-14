@@ -1,3 +1,9 @@
 data/
 
 .venv/
+
+.env
+
+wandb/
+
+*.pth
