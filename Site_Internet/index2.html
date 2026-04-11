@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<style>
+    body {
+        /* Le filtre sombre (noir à 70% d'opacité) superposé à ton image */
+        background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('Images/image_fond.jpg');
+        
+        background-size: cover;       /* L'image s'étire pour couvrir tout l'écran */
+        background-position: center;  /* L'image est bien centrée */
+        background-attachment: fixed; /* L'image reste fixe même si tu descends dans la page */
+      }
+    .btn-custom {
+            background-color: #E0BFBF ! important;
+            color: black ! important;
+            border: 1px solid #5c636a ! important;
+        }
+
+    .btn-check:checked + .btn-custom {
+        background-color: #EB4242 !important; /* Force la couleur verte ! */
+        color: white !important;
+        border-color: red !important;
+    }
+    </style>
+  </head>
+
+
+
+<head>
+    <meta charset="UTF-8">
+    <title>Projet de MIR</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+</head>
+<body class="text-white"> 
+    <!-- En-tête de la page -->
+    <div class="container">
+        <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
+        
+        <a href="/" class="d-flex align-items-center mb-3 mb-md-0 link-body-emphasis text-decoration-none">
+            <img src="Images/Symbole FPMs.png" alt="Symbole FPMs" height="32" class="me-3">
+            <span class="fs-4 fw-bold">Projet de Multimedia Information Retrieval</span>
+        </a>
+        </header>
+    </div> 
+
+    <!-- Switch entre la partie 2 et 3 -->
+    <ul class="nav nav-pills nav-fill gap-2 p-1 small rounded-5 shadow-sm mt-4" id="pillNav2" role="tablist" 
+    style="
+      background-color: #E0BFBF;
+      --bs-nav-link-color: black; 
+      --bs-nav-pills-link-active-color: white; 
+      --bs-nav-pills-link-active-bg: #EB4242;
+      --bs-nav-link-hover-color: white;
+    ">
+      <li class="nav-item" role="Moteur de recherche multi modal">
+        <a class="nav-link rounded-5 fw-bold" href="index.html">Moteur de recherche multi modal</a>
+      </li>
+      <li class="nav-item" role="Moteur de recherche d'image uni modal à deux niveaux">
+        <a class="nav-link active rounded-5 fw-bold" href="index2.html">Moteur de recherche d'image uni modal à deux niveaux</a>
+      </li>
+    </ul>
+
+    <!-- Contenu de la page -->
+    <div class="container mt-4">
+      <h1 class="mb-4">Moteur de recherche d'image uni modal à deux niveaux</h1>
+        <p class="lead">Cette partie présente notre moteur de recherche d'image uni modal à deux niveaux. Il s'agit d'un moteur de recherche d'image qui utilise une approche en deux étapes pour améliorer la précision des résultats.</p>
+    </div>
+    <div class="container">
+        <h2>Image de requête</h2>
+    </div>
+    <div
+        class="dropdown-menu d-block position-static pt-0 mx-0 rounded-3 shadow overflow-hidden w-280px"
+        data-bs-theme="light"
+      >
+        <form class="p-2 mb-2 bg-body-tertiary border-bottom">
+          <input
+            type="search"
+            class="form-control"
+            autocomplete="false"
+            placeholder="Entrez le nom d'une image requête..."
+          />
+        </form>
+        <ul class="list-unstyled mb-0">
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#">
+              Action
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#">
+              Another action
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#">
+              Something else here
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#">
+              Separated link
+            </a>
+          </li>
+        </ul>
+    </div>
+      <!-- Insérer quelque chose de dynamique qui montre l'image sélectionnée -->
+
+    <div class="d-flex flex-column align-items-center my-5">
+        <h3>Choix des descripteurs</h3>
+        <div class="btn-group mt-3 shadow-sm" role="group" aria-label="Choix des méthodes">
+            
+            <input type="checkbox" class="btn-check" id="btncheck1" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck1">Histogramme de couleur</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck4" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck4">Histogramme de couleur avec pondération (bins)</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck2" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck2">ORB</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck3" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck3">SIFT</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck5" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck5">VGG16</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck6" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck6">ResNet</label>
+        </div>
+
+
+        <div id="boite-options-histo" class="d-none mt-4 text-center">
+            <h5>Options de l'histogramme - Choix de la distance : </h5>
+            <div class="btn-group shadow-sm" role="group">
+                <input type="checkbox" class="btn-check" id="sousbtn1" autocomplete="off">
+                <label class="btn btn-custom" for="sousbtn1">Distance euclidienne</label>
+
+                <input type="checkbox" class="btn-check" id="sousbtn2" autocomplete="off">
+                <label class="btn btn-custom" for="sousbtn2">Autre distance</label>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Pied de la page -->
+    <div class="container">
+      <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
+        <p class="col-md-4 mb-0 text-body-secondary">
+          &copy; Canfyn Marie, Drogo Flavio, 2026
+        </p>
+        <a href="/" class="col-md-4 d-flex align-items-center justify-content-end mb-3 mb-md-0 link-body-emphasis text-decoration-none">
+          <img src="Images/Symbole FPMs.png" alt="Symbole FPMs" height="32">
+        </a>
+        
+      </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmxc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        // 1. On "attrape" nos éléments HTML grâce à leurs IDs
+        const boutonDeclencheur = document.getElementById('btncheck1');
+        const boiteACacher = document.getElementById('boite-options-histo');
+
+        // 2. On écoute à chaque fois que le bouton change d'état (cliqué/décliqué)
+        boutonDeclencheur.addEventListener('change', function() {
+            
+            if (this.checked) {
+                // Si la case est cochée, on enlève le mode caché ('d-none')
+                boiteACacher.classList.remove('d-none');
+            } else {
+                // Si la case est décochée, on remet le mode caché ('d-none')
+                boiteACacher.classList.add('d-none');
+            }
+            
+        });
+    </script>
+</body>
+</html>
