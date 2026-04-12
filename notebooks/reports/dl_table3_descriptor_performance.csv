@@ -1,0 +1,11 @@
+Descriptor,Distance,Indexing Time (s),Descriptor Size (MB),Dim,Avg Search Time/image (ms)
+ResNet50 (pre-logits),Euclidean,11.6,78.01,2048,15.51
+ResNet50 (pre-logits),Cosine,11.6,78.01,2048,1.91
+ResNet50 (pre-logits),Correlation,11.6,78.01,2048,39.64
+ResNet50 (pre-logits),Chi-square,11.6,78.01,2048,43.83
+ResNet50 (pre-logits),Bhattacharyya,11.6,78.01,2048,35.19
+ViT-Small (pre-logits),Euclidean,11.4,14.63,384,2.37
+ViT-Small (pre-logits),Cosine,11.4,14.63,384,0.05
+ViT-Small (pre-logits),Correlation,11.4,14.63,384,8.14
+ViT-Small (pre-logits),Chi-square,11.4,14.63,384,7.53
+ViT-Small (pre-logits),Bhattacharyya,11.4,14.63,384,5.19

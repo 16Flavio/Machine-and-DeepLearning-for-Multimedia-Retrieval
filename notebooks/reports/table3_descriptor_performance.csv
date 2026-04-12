@@ -1,0 +1,16 @@
+Descriptor,Distance,Indexing Time (s),Descriptor Size (MB),Avg Search Time/image (s)
+ConvNeXt-Base,Euclidean,59.8,19.50,3.49 ms
+ConvNeXt-Base,Cosine,59.8,19.50,0.06 ms
+ConvNeXt-Base,Correlation,59.8,19.50,10.59 ms
+ConvNeXt-Base,Chi-square,59.8,19.50,7.89 ms
+ConvNeXt-Base,Bhattacharyya,59.8,19.50,6.70 ms
+DINOv2 ViT-B/14,Euclidean,21.8,19.50,3.23 ms
+DINOv2 ViT-B/14,Cosine,21.8,19.50,0.08 ms
+DINOv2 ViT-B/14,Correlation,21.8,19.50,9.22 ms
+DINOv2 ViT-B/14,Chi-square,21.8,19.50,7.74 ms
+DINOv2 ViT-B/14,Bhattacharyya,21.8,19.50,6.59 ms
+Ensemble,Euclidean,81.7,39.00,8.28 ms
+Ensemble,Cosine,81.7,39.00,0.35 ms
+Ensemble,Correlation,81.7,39.00,20.27 ms
+Ensemble,Chi-square,81.7,39.00,20.58 ms
+Ensemble,Bhattacharyya,81.7,39.00,16.49 ms
