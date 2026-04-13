@@ -43,7 +43,139 @@
       </li>
     </ul>
 
-    
+    <!--Corps de la page-->
+    <div class="container mt-4">
+      <h1 class="mb-4">Moteur de recherche multi modal (CLIP & FAISS)</h1>
+      <p class="lead">Cette partie détaille la mise en place de notre approche multimodale. En combinant l'espace vectoriel partagé du modèle CLIP et l'indexation rapide de FAISS, ce système crée un pont direct entre la compréhension du texte et la vision par ordinateur.</p>
+    </div>
+
+    <!--Ajout de texte ou d'image-->
+    <div class="container text-center mt-4 mb-5">
+      <h2>Recherche Sémantique</h2>
+      
+      <div class="d-flex justify-content-center align-items-center gap-3 mt-4 flex-wrap" id="rechercheContainer">
+          
+          <div id="sectionTexte" class="position-relative w-50" style="min-width: 250px;">
+              <input type="text" id="barreRecherche" class="form-control" placeholder="Entrez une description (ex: Un chien sur la plage)..." autocomplete="off">
+              <ul id="listeAutocompletion" class="list-group position-absolute w-100 d-none text-dark text-start shadow" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+              </ul>
+          </div>
+
+          <span id="separateurOu" class="fw-bold">OU</span>
+
+          <div id="sectionImage">
+              <input type="file" id="uploadImage" class="form-control" accept="image/*">
+          </div>
+      </div>
+
+      <button id="btnReset" class="btn btn-outline-secondary mt-3 d-none">
+          <i class="bi bi-arrow-counterclockwise"></i> Changer de mode de recherche
+      </button>
+
+      <div class="mt-4">
+          <img id="apercuImage" src="" alt="Aperçu de votre image" class="img-fluid rounded shadow-lg d-none" style="max-height: 350px;">
+      </div>
+    </div>
+
+    <div class="d-flex flex-column align-items-center my-5">
+      <h3>Choix du top</h3>
+      
+      <div class="input-group mb-3 w-50">          
+          <input type="number" id="inputTop" class="form-control" placeholder="Entrez un chiffre..." min="1">
+      </div>
+    </div>
+    <div id="msgErreur" class="text-danger mt-3 fw-bold d-none">
+        <i class="bi bi-exclamation-triangle"></i> Veuillez saisir un texte ou sélectionner une image, ainsi que de remplir le champ 'Choix du top' avant de lancer la recherche.
+    </div>
+    <div class="d-flex flex-column align-items-center my-5">
+      <button class="btn btn-danger btn-lg fw-bold shadow-sm" id="btnLancerRecherche">Lancer la recherche</button>
+    </div>
+
+
+    <!--Script-->
+    <script>
+      //Partie concernant l'affichage et le changement entre les modes de recherche
+      const barreRecherche = document.getElementById('barreRecherche');
+      const uploadImage = document.getElementById('uploadImage');
+      const sectionTexte = document.getElementById('sectionTexte');
+      const sectionImage = document.getElementById('sectionImage');
+      const separateurOu = document.getElementById('separateurOu');
+      const apercuImage = document.getElementById('apercuImage');
+      const btnReset = document.getElementById('btnReset');
+
+      // Information textuelle
+      barreRecherche.addEventListener('input', function() {
+          if (this.value.trim() !== '') {
+              // On cache l'upload d'image et le "OU"
+              sectionImage.classList.add('d-none');
+              separateurOu.classList.add('d-none');
+              // On affiche le bouton de reset
+              btnReset.classList.remove('d-none');
+          } else {
+              // Si la barre redevient vide, on réaffiche tout
+              resetAffichage();
+          }
+      });
+
+      // CHargement d'image
+      uploadImage.addEventListener('change', function() {
+          if (this.files && this.files[0]) {
+              // On cache la barre de texte et le "OU"
+              sectionTexte.classList.add('d-none');
+              separateurOu.classList.add('d-none');
+              btnReset.classList.remove('d-none');
+
+              // On crée un aperçu visuel de l'image chargée
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                  apercuImage.src = e.target.result;
+                  apercuImage.classList.remove('d-none');
+              };
+              reader.readAsDataURL(this.files[0]);
+          }
+      });
+
+      // Bouton changer de mode de recherche
+      btnReset.addEventListener('click', resetAffichage);
+
+      // Fonction qui remet l'interface à zéro
+      function resetAffichage() {
+          // On vide les champs
+          barreRecherche.value = '';
+          uploadImage.value = '';
+          // On cache l'aperçu
+          apercuImage.src = '';
+          apercuImage.classList.add('d-none');
+          // On réaffiche les deux options
+          sectionTexte.classList.remove('d-none');
+          sectionImage.classList.remove('d-none');
+          separateurOu.classList.remove('d-none');
+          // On cache le bouton reset
+          btnReset.classList.add('d-none');
+      }
+    const btnLancerRecherche = document.getElementById('btnLancerRecherche');
+    const TopInput = document.getElementById('inputTop');
+    const msgErreur = document.getElementById('msgErreur');
+    btnLancerRecherche.addEventListener('click', function() {
+        const texteRecherche = barreRecherche.value.trim();
+        const imageChargee = uploadImage.files && uploadImage.files[0];
+        const topValue = TopInput.value.trim();
+
+        if (texteRecherche === '' && !imageChargee) {
+            // Afficher un message d'erreur si aucun mode de recherche n'est sélectionné
+            msgErreur.textContent = "Veuillez saisir un texte ou sélectionner une image avant de lancer la recherche.";
+            msgErreur.classList.remove('d-none');
+        } else if (topValue === '') {
+            // Afficher un message d'erreur si le champ 'Choix du top' n'est pas rempli
+            msgErreur.textContent = "Veuillez remplir le champ 'Choix du top' avant de lancer la recherche.";
+            msgErreur.classList.remove('d-none');
+        } else {
+            // Masquer le message d'erreur et lancer la recherche
+            msgErreur.classList.add('d-none');
+        }
+    });
+
+    </script>
 
 
     <!-- Pied de la page -->

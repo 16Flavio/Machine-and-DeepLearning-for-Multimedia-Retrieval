@@ -147,6 +147,9 @@
 
             <input type="checkbox" class="btn-check" id="btncheck5" autocomplete="off">
             <label class="btn btn-custom fw-bold" for="btncheck5">Vit</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck6" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck6">Metrics learning </label>
         </div>
     </div>
     <div class="d-flex flex-column align-items-center my-5">
@@ -173,7 +176,12 @@
           <input type="number" id="inputTop" class="form-control" placeholder="Entrez un chiffre..." min="1">
       </div>
     </div>
-
+    <div id="msgErreur" class="text-danger mt-3 fw-bold d-none">
+        <i class="bi bi-exclamation-triangle"></i> Veuillez sélectionner une image, ainsi que de remplir et compléter les différents critères avant de lancer la recherche.
+    </div>
+    <div class="d-flex flex-column align-items-center my-5">
+      <button class="btn btn-danger btn-lg fw-bold shadow-sm" id="btnLancerRecherche">Lancer la recherche</button>
+    </div>
 
     <!-- Pied de la page -->
     <div class="container">
@@ -197,11 +205,13 @@
         const orbCheck = document.getElementById('btncheck1');
         const siftCheck = document.getElementById('btncheck2');
         const hogCheck = document.getElementById('btncheck3');
+        const metricsLearningCheck = document.getElementById('btncheck6');
         const orbLabel = document.querySelector('label[for="btncheck1"]');
         const siftLabel = document.querySelector('label[for="btncheck2"]');
         const hogLabel = document.querySelector('label[for="btncheck3"]');
         const vitLabel = document.querySelector('label[for="btncheck5"]');
         const ResLabel = document.querySelector('label[for="btncheck4"]');
+        const metricsLearningLabel = document.querySelector('label[for="btncheck6"]');
         const euclidienneCheck = document.getElementById('btncheck1_1');
         const cosinusCheck = document.getElementById('btncheck1_2');
         const chiCarreCheck = document.getElementById('btncheck1_3');
@@ -250,29 +260,54 @@
                 hogLabel.classList.remove('bouton-grise');
             }
           })
+        metricsLearningCheck.addEventListener('change', function() {
+            if (this.checked) {
+                orbCheck.checked = false;
+                siftCheck.checked = false;
+                hogCheck.checked = false;
+                orbCheck.disabled = true;
+                siftCheck.disabled = true;
+                hogCheck.disabled = true;
+                orbLabel.classList.add('bouton-grise');
+                siftLabel.classList.add('bouton-grise');
+                hogLabel.classList.add('bouton-grise');
+            } else {
+                orbCheck.disabled = false;
+                siftCheck.disabled = false;
+                hogCheck.disabled = false;
+                orbLabel.classList.remove('bouton-grise');
+                siftLabel.classList.remove('bouton-grise');
+                hogLabel.classList.remove('bouton-grise');
+            }
+          })
         hogCheck.addEventListener('change', function() {
             if (this.checked) {
                 orbCheck.checked = false;
                 siftCheck.checked = false;
                 vitCheck.checked = false;
                 ResCheck.checked = false;
+                metricsLearningCheck.checked = false;
                 orbCheck.disabled = true;
                 siftCheck.disabled = true;
                 vitCheck.disabled = true;
                 ResCheck.disabled = true;
+                metricsLearningCheck.disabled = true;
                 orbLabel.classList.add('bouton-grise');
                 siftLabel.classList.add('bouton-grise');
                 vitLabel.classList.add('bouton-grise');
                 ResLabel.classList.add('bouton-grise');
+                metricsLearningLabel.classList.add('bouton-grise');
             } else {
                 orbCheck.disabled = false;
                 siftCheck.disabled = false;
                 vitCheck.disabled = false;
                 ResCheck.disabled = false;
+                metricsLearningCheck.disabled = false;
                 orbLabel.classList.remove('bouton-grise');
                 siftLabel.classList.remove('bouton-grise');
                 vitLabel.classList.remove('bouton-grise');
                 ResLabel.classList.remove('bouton-grise');
+                metricsLearningLabel.classList.remove('bouton-grise');
             }
           })
         orbCheck.addEventListener('change', function() {
@@ -280,19 +315,24 @@
                 vitCheck.checked = false;
                 ResCheck.checked = false;
                 hogCheck.checked = false;
+                metricsLearningCheck.checked = false;
                 vitCheck.disabled = true;
                 ResCheck.disabled = true;
                 hogCheck.disabled = true;
+                metricsLearningCheck.disabled = true;
                 vitLabel.classList.add('bouton-grise');
                 ResLabel.classList.add('bouton-grise');
                 hogLabel.classList.add('bouton-grise');
+                metricsLearningLabel.classList.add('bouton-grise');
             } else {
                 vitCheck.disabled = false;
                 ResCheck.disabled = false;
                 hogCheck.disabled = false;
+                metricsLearningCheck.disabled = false;
                 vitLabel.classList.remove('bouton-grise');
                 ResLabel.classList.remove('bouton-grise');
                 hogLabel.classList.remove('bouton-grise');
+                metricsLearningLabel.classList.remove('bouton-grise');
             }
           })
         siftCheck.addEventListener('change', function() {
@@ -300,19 +340,24 @@
                 vitCheck.checked = false;
                 ResCheck.checked = false;
                 hogCheck.checked = false;
+                metricsLearningCheck.checked = false;
                 vitCheck.disabled = true;
                 ResCheck.disabled = true;
                 hogCheck.disabled = true;
+                metricsLearningCheck.disabled = true;
                 vitLabel.classList.add('bouton-grise');
                 ResLabel.classList.add('bouton-grise');
                 hogLabel.classList.add('bouton-grise');
+                metricsLearningLabel.classList.add('bouton-grise');
             } else {
                 vitCheck.disabled = false;
                 ResCheck.disabled = false;
                 hogCheck.disabled = false;
+                metricsLearningCheck.disabled = false;
                 vitLabel.classList.remove('bouton-grise');
                 ResLabel.classList.remove('bouton-grise');
                 hogLabel.classList.remove('bouton-grise');
+                metricsLearningLabel.classList.remove('bouton-grise');
             }
           })
         euclidienneCheck.addEventListener('change', function() {
@@ -454,6 +499,24 @@
               apercuImage.src = sourceImage;
               apercuImage.classList.remove('d-none');
           }
+        //Partie pour obliger de cocher chaque critères
+          const btnLancerRecherche = document.getElementById('btnLancerRecherche');
+          const TopInput = document.getElementById('inputTop');
+          const msgErreur = document.getElementById('msgErreur');
+            btnLancerRecherche.addEventListener('click', function() {
+                const imageChargee = uploadImage.files && uploadImage.files[0];
+                const imageRecherche = barreRecherche.value.trim() !== "";
+                const aUneImage = imageRecherche || imageChargee;
+                const topValue = TopInput.value.trim();
+                const descripteurSelectionne = (orbCheck.checked || siftCheck.checked || hogCheck.checked || vitCheck.checked || ResCheck.checked || metricsLearningCheck.checked);
+                const metriqueSelectionnee = (euclidienneCheck.checked || cosinusCheck.checked || chiCarreCheck.checked || bhattacharyyaCheck.checked);
+                if (!aUneImage || !descripteurSelectionne || !metriqueSelectionnee || topValue === '') {
+                    msgErreur.textContent = "Veuillez sélectionner une image, ainsi que de remplir et compléter les différents critères avant de lancer la recherche.";
+                    msgErreur.classList.remove('d-none');
+                } else {
+                    msgErreur.classList.add('d-none');
+                };
+            });    
     </script>
 </body>
 </html>
