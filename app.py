@@ -4,7 +4,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
-from part1_unimodal.search import search as run_search, search_uploaded as run_search_uploaded
+from part1_unimodal.search import (
+    search as run_search,
+    search_uploaded as run_search_uploaded,
+    projection_3d as run_projection_3d,
+)
 from part2_multimodal.faiss_index import search_text as mm_search_text, search_image as mm_search_image
 
 app = Flask(__name__, static_folder='Site_Internet', static_url_path='')
@@ -59,6 +63,21 @@ def api_search_multimodal():
         return jsonify({"erreur": f"Index CLIP manquant: {e}"}), 500
     except Exception as e:
         return jsonify({"erreur": f"Erreur serveur: {e}"}), 500
+
+@app.route('/api/projection_3d', methods=['GET'])
+def api_projection_3d():
+    descriptor = (request.args.get('descriptor') or '').strip()
+    if not descriptor:
+        return jsonify({"erreur": "Paramètre 'descriptor' requis."}), 400
+    try:
+        return jsonify(run_projection_3d(descriptor))
+    except ValueError as e:
+        return jsonify({"erreur": str(e)}), 400
+    except FileNotFoundError as e:
+        return jsonify({"erreur": f"Fichier de descripteurs manquant: {e}"}), 500
+    except Exception as e:
+        return jsonify({"erreur": f"Erreur serveur: {e}"}), 500
+
 
 @app.route('/api/search', methods=['POST'])
 def api_search():

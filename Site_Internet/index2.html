@@ -164,6 +164,41 @@
       </div>
     </div>
 
+    <!-- Visualisation 3D des descripteurs -->
+    <div class="container mb-5">
+      <h3 class="text-center mb-3">Visualisation 3D des descripteurs (UMAP)</h3>
+      <p class="text-center text-body-secondary small">
+        Projection UMAP en 3D des features de la gallery, colorée par classe.
+      </p>
+      <div class="d-flex justify-content-center mb-3">
+        <div class="btn-group flex-wrap shadow-sm" role="group" aria-label="Descripteur 3D">
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_ORB" value="ORB" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_ORB">ORB</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_SIFT" value="SIFT" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_SIFT">SIFT</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_HOG" value="HOG" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_HOG">HOG</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_ConvNextClassifier" value="ConvNextClassifier" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_ConvNextClassifier">ConvNext Classifier</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_ConvNextMetric" value="ConvNextMetric" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_ConvNextMetric">ConvNext Metric</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_VitMetric" value="VitMetric" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_VitMetric">ViT Metric</label>
+        </div>
+      </div>
+      <div id="proj3dInfo" class="text-center text-body-secondary small mb-2">
+        Sélectionnez un descripteur pour afficher la projection.
+      </div>
+      <div id="proj3dError" class="text-danger text-center small mb-2 d-none"></div>
+      <div id="proj3dLoading" class="text-center d-none">
+        <div class="spinner-border text-light" role="status"></div>
+        <div class="mt-2 small">Calcul de la projection...</div>
+      </div>
+      <div class="bg-dark bg-opacity-75 rounded-3 p-2 mx-auto" style="max-width: 900px;">
+        <div id="proj3dPlot" style="width: 100%; height: 520px;"></div>
+      </div>
+    </div>
+
     <!-- Pied de la page -->
     <div class="container">
       <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
@@ -180,6 +215,7 @@
     <!-- Scipts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmxc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
     <script>
         // Partie concernant les associations de boutons possibles 
         const vitCheck = document.getElementById('btncheck5');
@@ -515,6 +551,83 @@
                 });
             });
 
+        // Projection 3D des descripteurs (PCA)
+        const proj3dInfo = document.getElementById('proj3dInfo');
+        const proj3dError = document.getElementById('proj3dError');
+        const proj3dLoading = document.getElementById('proj3dLoading');
+        const proj3dPlot = document.getElementById('proj3dPlot');
+
+        function groupByLabel(data) {
+            const groups = {};
+            for (let i = 0; i < data.labels.length; i++) {
+                const lab = data.labels[i];
+                if (!groups[lab]) groups[lab] = {x: [], y: [], z: [], text: []};
+                groups[lab].x.push(data.x[i]);
+                groups[lab].y.push(data.y[i]);
+                groups[lab].z.push(data.z[i]);
+                groups[lab].text.push(data.filenames[i] || '');
+            }
+            return groups;
+        }
+
+        function renderProj3d(data) {
+            const groups = groupByLabel(data);
+            const traces = Object.keys(groups).sort().map(lab => ({
+                type: 'scatter3d',
+                mode: 'markers',
+                name: 'classe ' + lab,
+                x: groups[lab].x,
+                y: groups[lab].y,
+                z: groups[lab].z,
+                text: groups[lab].text,
+                hovertemplate: '%{text}<br>classe: ' + lab + '<extra></extra>',
+                marker: {size: 3.5, opacity: 0.85},
+            }));
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: {color: '#fff'},
+                margin: {l: 0, r: 0, t: 10, b: 0},
+                legend: {font: {color: '#fff'}, bgcolor: 'rgba(0,0,0,0)'},
+                scene: {
+                    xaxis: {title: 'UMAP-1', color: '#ccc', gridcolor: 'rgba(255,255,255,0.15)'},
+                    yaxis: {title: 'UMAP-2', color: '#ccc', gridcolor: 'rgba(255,255,255,0.15)'},
+                    zaxis: {title: 'UMAP-3', color: '#ccc', gridcolor: 'rgba(255,255,255,0.15)'},
+                },
+            };
+            Plotly.react(proj3dPlot, traces, layout, {responsive: true, displaylogo: false});
+
+            proj3dInfo.textContent =
+                data.descriptor + ' — UMAP 3D · ' + data.n_shown + '/' + data.n_total +
+                ' points · n_neighbors = ' + data.n_neighbors;
+        }
+
+        document.querySelectorAll('input[name="proj3dDesc"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (!this.checked) return;
+                const desc = this.value;
+                proj3dError.classList.add('d-none');
+                proj3dLoading.classList.remove('d-none');
+                proj3dInfo.textContent = 'Chargement de ' + desc + '...';
+                fetch('/api/projection_3d?descriptor=' + encodeURIComponent(desc))
+                    .then(r => r.json().then(data => ({ok: r.ok, data})))
+                    .then(({ok, data}) => {
+                        proj3dLoading.classList.add('d-none');
+                        if (!ok || data.erreur) {
+                            proj3dError.textContent = data.erreur || 'Erreur lors du chargement.';
+                            proj3dError.classList.remove('d-none');
+                            proj3dInfo.textContent = '';
+                            return;
+                        }
+                        renderProj3d(data);
+                    })
+                    .catch(err => {
+                        proj3dLoading.classList.add('d-none');
+                        proj3dError.textContent = 'Erreur réseau: ' + err;
+                        proj3dError.classList.remove('d-none');
+                    });
+            });
+        });
     </script>
 </body>
 </html>

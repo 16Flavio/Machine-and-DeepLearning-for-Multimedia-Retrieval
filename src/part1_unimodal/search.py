@@ -217,6 +217,58 @@ def search_uploaded(image, descriptors, metric: str, top_k: int, query_label: st
     }
 
 
+def projection_3d(descriptor: str, max_points: int = 2000) -> dict:
+    if descriptor not in DESCRIPTOR_TAGS:
+        raise ValueError(
+            f"Descripteur inconnu: {descriptor}. Supportés: {', '.join(DESCRIPTOR_TAGS)}."
+        )
+    tag = DESCRIPTOR_TAGS[descriptor]
+    cache_key = f"proj3d::{tag}::{max_points}"
+    if cache_key in _cache:
+        return _cache[cache_key]
+
+    gallery, _, g_lab, _ = _load(tag)
+    files = _gallery_filenames()
+    n = gallery.shape[0]
+
+    if n > max_points:
+        rng = np.random.default_rng(42)
+        idx = rng.choice(n, size=max_points, replace=False)
+        idx.sort()
+    else:
+        idx = np.arange(n)
+
+    X = gallery[idx].astype(np.float32)
+    labels = [str(l) for l in g_lab[idx].tolist()]
+    filenames = [files[i] if i < len(files) else "" for i in idx]
+
+    import umap
+    n_neighbors = int(min(15, max(2, len(idx) - 1)))
+    reducer = umap.UMAP(
+        n_components=3,
+        n_neighbors=n_neighbors,
+        min_dist=0.1,
+        metric="euclidean",
+        random_state=42,
+    )
+    coords = reducer.fit_transform(X)
+
+    payload = {
+        "descriptor": descriptor,
+        "method": "UMAP",
+        "x": coords[:, 0].astype(float).tolist(),
+        "y": coords[:, 1].astype(float).tolist(),
+        "z": coords[:, 2].astype(float).tolist(),
+        "labels": labels,
+        "filenames": filenames,
+        "n_neighbors": n_neighbors,
+        "n_total": int(n),
+        "n_shown": int(len(idx)),
+    }
+    _cache[cache_key] = payload
+    return payload
+
+
 def _normalize_query_label(query_label_str: str, tag: str):
     _, _, g_lab, q_lab = _load(tag)
     if g_lab.dtype.kind in ("U", "S", "O"):
