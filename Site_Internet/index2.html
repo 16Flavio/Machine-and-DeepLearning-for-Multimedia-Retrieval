@@ -1,58 +1,17 @@
 <!DOCTYPE html>
 <html lang="fr">
-
-<style>
-    body {
-        /* Le filtre sombre (noir à 70% d'opacité) superposé à ton image */
-        background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('Images/image_fond.jpg');
-        
-        background-size: cover;       /* L'image s'étire pour couvrir tout l'écran */
-        background-position: center;  /* L'image est bien centrée */
-        background-attachment: fixed; /* L'image reste fixe même si tu descends dans la page */
-      }
-    .btn-custom {
-            background-color: #E0BFBF ! important;
-            color: black ! important;
-            border: 1px solid #5c636a ! important;
-        }
-
-    .btn-check:checked + .btn-custom {
-        background-color: #EB4242 !important; /* Force la couleur verte ! */
-        color: white !important;
-        border-color: red !important;
-    }
-    .bouton-grise {
-        background-color: #e9ecef !important; /* Gris clair */
-        color: #6c757d !important; /* Texte gris foncé */
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-    </style>
-  </head>
-
-
-
 <head>
     <meta charset="UTF-8">
     <title>Projet de MIR</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
-</head><!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Projet de MIR</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
     <style>
         body {
-            /* Le filtre sombre (noir à 70% d'opacité) superposé à ton image */
             background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('Images/image_fond.jpg');
-            background-size: cover;       /* L'image s'étire pour couvrir tout l'écran */
-            background-position: center;  /* L'image est bien centrée */
-            background-attachment: fixed; /* L'image reste fixe même si tu descends dans la page */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
         }
         .btn-custom {
             background-color: #E0BFBF !important;
@@ -60,13 +19,13 @@
             border: 1px solid #5c636a !important;
         }
         .btn-check:checked + .btn-custom {
-            background-color: #EB4242 !important; /* Force la couleur verte ! */
+            background-color: #EB4242 !important;
             color: white !important;
             border-color: red !important;
         }
         .bouton-grise {
-            background-color: #e9ecef !important; /* Gris clair */
-            color: #6c757d !important; /* Texte gris foncé */
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
             opacity: 0.6;
             cursor: not-allowed;
         }
@@ -143,13 +102,13 @@
             <label class="btn btn-custom fw-bold" for="btncheck3">HOG</label>
 
             <input type="checkbox" class="btn-check" id="btncheck4" autocomplete="off">
-            <label class="btn btn-custom fw-bold" for="btncheck4">ResNet</label>
+            <label class="btn btn-custom fw-bold" for="btncheck4">ConvNext Classifier</label>
 
             <input type="checkbox" class="btn-check" id="btncheck5" autocomplete="off">
-            <label class="btn btn-custom fw-bold" for="btncheck5">Vit</label>
+            <label class="btn btn-custom fw-bold" for="btncheck5">ConvNext Metric</label>
 
             <input type="checkbox" class="btn-check" id="btncheck6" autocomplete="off">
-            <label class="btn btn-custom fw-bold" for="btncheck6">Metrics learning </label>
+            <label class="btn btn-custom fw-bold" for="btncheck6">ViT Metric</label>
         </div>
     </div>
     <div class="d-flex flex-column align-items-center my-5">
@@ -183,6 +142,28 @@
       <button class="btn btn-danger btn-lg fw-bold shadow-sm" id="btnLancerRecherche">Lancer la recherche</button>
     </div>
 
+    <!-- Zone d'affichage des résultats renvoyés par /api/search -->
+    <div class="container mb-5">
+      <div id="zoneResultats" class="d-none">
+        <h3 class="text-center mb-4">Résultats</h3>
+        <div id="gridResultats" class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3"></div>
+
+        <div id="zonePrCurve" class="mt-5 d-none">
+          <h3 class="text-center mb-3">Courbe Précision / Rappel</h3>
+          <div id="prInfo" class="text-center text-body-secondary small mb-2"></div>
+          <div class="bg-dark bg-opacity-75 rounded-3 p-3 mx-auto" style="max-width: 700px;">
+            <div style="position: relative; height: 360px; width: 100%;">
+              <canvas id="prCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="msgChargement" class="text-center d-none">
+        <div class="spinner-border text-light" role="status"></div>
+        <div class="mt-2">Recherche en cours...</div>
+      </div>
+    </div>
+
     <!-- Pied de la page -->
     <div class="container">
       <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
@@ -198,6 +179,7 @@
 
     <!-- Scipts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmxc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         // Partie concernant les associations de boutons possibles 
         const vitCheck = document.getElementById('btncheck5');
@@ -220,146 +202,8 @@
         const cosinusLabel = document.querySelector('label[for="btncheck1_2"]');
         const chiCarreLabel = document.querySelector('label[for="btncheck1_3"]');
         const bhattacharyyaLabel = document.querySelector('label[for="btncheck1_4"]');
-        vitCheck.addEventListener('change', function() {
-            if (this.checked) {
-                orbCheck.checked = false;
-                siftCheck.checked = false;
-                hogCheck.checked = false;
-                orbCheck.disabled = true;
-                siftCheck.disabled = true;
-                hogCheck.disabled = true;
-                orbLabel.classList.add('bouton-grise');
-                siftLabel.classList.add('bouton-grise');
-                hogLabel.classList.add('bouton-grise');
-            } else {
-                orbCheck.disabled = false;
-                siftCheck.disabled = false;
-                hogCheck.disabled = false;
-                orbLabel.classList.remove('bouton-grise');
-                siftLabel.classList.remove('bouton-grise');
-                hogLabel.classList.remove('bouton-grise');
-            }
-          });
-        ResCheck.addEventListener('change', function() {
-            if (this.checked) {
-                orbCheck.checked = false;
-                siftCheck.checked = false;
-                hogCheck.checked = false;
-                orbCheck.disabled = true;
-                siftCheck.disabled = true;
-                hogCheck.disabled = true;
-                orbLabel.classList.add('bouton-grise');
-                siftLabel.classList.add('bouton-grise');
-                hogLabel.classList.add('bouton-grise');
-            } else {
-                orbCheck.disabled = false;
-                siftCheck.disabled = false;
-                hogCheck.disabled = false;
-                orbLabel.classList.remove('bouton-grise');
-                siftLabel.classList.remove('bouton-grise');
-                hogLabel.classList.remove('bouton-grise');
-            }
-          })
-        metricsLearningCheck.addEventListener('change', function() {
-            if (this.checked) {
-                orbCheck.checked = false;
-                siftCheck.checked = false;
-                hogCheck.checked = false;
-                orbCheck.disabled = true;
-                siftCheck.disabled = true;
-                hogCheck.disabled = true;
-                orbLabel.classList.add('bouton-grise');
-                siftLabel.classList.add('bouton-grise');
-                hogLabel.classList.add('bouton-grise');
-            } else {
-                orbCheck.disabled = false;
-                siftCheck.disabled = false;
-                hogCheck.disabled = false;
-                orbLabel.classList.remove('bouton-grise');
-                siftLabel.classList.remove('bouton-grise');
-                hogLabel.classList.remove('bouton-grise');
-            }
-          })
-        hogCheck.addEventListener('change', function() {
-            if (this.checked) {
-                orbCheck.checked = false;
-                siftCheck.checked = false;
-                vitCheck.checked = false;
-                ResCheck.checked = false;
-                metricsLearningCheck.checked = false;
-                orbCheck.disabled = true;
-                siftCheck.disabled = true;
-                vitCheck.disabled = true;
-                ResCheck.disabled = true;
-                metricsLearningCheck.disabled = true;
-                orbLabel.classList.add('bouton-grise');
-                siftLabel.classList.add('bouton-grise');
-                vitLabel.classList.add('bouton-grise');
-                ResLabel.classList.add('bouton-grise');
-                metricsLearningLabel.classList.add('bouton-grise');
-            } else {
-                orbCheck.disabled = false;
-                siftCheck.disabled = false;
-                vitCheck.disabled = false;
-                ResCheck.disabled = false;
-                metricsLearningCheck.disabled = false;
-                orbLabel.classList.remove('bouton-grise');
-                siftLabel.classList.remove('bouton-grise');
-                vitLabel.classList.remove('bouton-grise');
-                ResLabel.classList.remove('bouton-grise');
-                metricsLearningLabel.classList.remove('bouton-grise');
-            }
-          })
-        orbCheck.addEventListener('change', function() {
-            if (this.checked) {
-                vitCheck.checked = false;
-                ResCheck.checked = false;
-                hogCheck.checked = false;
-                metricsLearningCheck.checked = false;
-                vitCheck.disabled = true;
-                ResCheck.disabled = true;
-                hogCheck.disabled = true;
-                metricsLearningCheck.disabled = true;
-                vitLabel.classList.add('bouton-grise');
-                ResLabel.classList.add('bouton-grise');
-                hogLabel.classList.add('bouton-grise');
-                metricsLearningLabel.classList.add('bouton-grise');
-            } else {
-                vitCheck.disabled = false;
-                ResCheck.disabled = false;
-                hogCheck.disabled = false;
-                metricsLearningCheck.disabled = false;
-                vitLabel.classList.remove('bouton-grise');
-                ResLabel.classList.remove('bouton-grise');
-                hogLabel.classList.remove('bouton-grise');
-                metricsLearningLabel.classList.remove('bouton-grise');
-            }
-          })
-        siftCheck.addEventListener('change', function() {
-            if (this.checked) {
-                vitCheck.checked = false;
-                ResCheck.checked = false;
-                hogCheck.checked = false;
-                metricsLearningCheck.checked = false;
-                vitCheck.disabled = true;
-                ResCheck.disabled = true;
-                hogCheck.disabled = true;
-                metricsLearningCheck.disabled = true;
-                vitLabel.classList.add('bouton-grise');
-                ResLabel.classList.add('bouton-grise');
-                hogLabel.classList.add('bouton-grise');
-                metricsLearningLabel.classList.add('bouton-grise');
-            } else {
-                vitCheck.disabled = false;
-                ResCheck.disabled = false;
-                hogCheck.disabled = false;
-                metricsLearningCheck.disabled = false;
-                vitLabel.classList.remove('bouton-grise');
-                ResLabel.classList.remove('bouton-grise');
-                hogLabel.classList.remove('bouton-grise');
-                metricsLearningLabel.classList.remove('bouton-grise');
-            }
-          })
+        // Descripteurs : multi-select libre — la fusion des classements est faite
+        // côté serveur via Reciprocal Rank Fusion. Aucune exclusivité mutuelle.
         euclidienneCheck.addEventListener('change', function() {
             if (this.checked) {
                 cosinusCheck.checked = false;
@@ -503,20 +347,174 @@
           const btnLancerRecherche = document.getElementById('btnLancerRecherche');
           const TopInput = document.getElementById('inputTop');
           const msgErreur = document.getElementById('msgErreur');
+            function descripteursChoisis() {
+                const picks = [];
+                if (orbCheck.checked) picks.push('ORB');
+                if (siftCheck.checked) picks.push('SIFT');
+                if (hogCheck.checked) picks.push('HOG');
+                if (ResCheck.checked) picks.push('ConvNextClassifier');
+                if (vitCheck.checked) picks.push('ConvNextMetric');
+                if (metricsLearningCheck.checked) picks.push('VitMetric');
+                return picks;
+            }
+            function metriqueChoisie() {
+                if (euclidienneCheck.checked) return 'Euclidienne';
+                if (cosinusCheck.checked) return 'Cosinus';
+                if (chiCarreCheck.checked) return 'Chi carré';
+                if (bhattacharyyaCheck.checked) return 'Bhattacharyya';
+                return null;
+            }
+
+            const zoneResultats = document.getElementById('zoneResultats');
+            const gridResultats = document.getElementById('gridResultats');
+            const msgChargement = document.getElementById('msgChargement');
+            const zonePrCurve = document.getElementById('zonePrCurve');
+            const prInfo = document.getElementById('prInfo');
+            let prChart = null;
+
+            function afficherResultats(results) {
+                gridResultats.innerHTML = '';
+                results.forEach((r, i) => {
+                    const col = document.createElement('div');
+                    col.className = 'col';
+                    col.innerHTML =
+                        '<div class="card bg-dark bg-opacity-75 text-white border-0 shadow-sm h-100" data-bs-theme="dark">' +
+                        '  <img src="/cars_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
+                        '  <div class="card-body p-2">' +
+                        '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
+                        '    <div class="small text-body-secondary">score: ' + r.score.toFixed(4) + '</div>' +
+                        '  </div>' +
+                        '</div>';
+                    gridResultats.appendChild(col);
+                });
+                zoneResultats.classList.remove('d-none');
+            }
+
+            function afficherPrCurve(pr, descripteur, metrique) {
+                // Always reveal the section so the user gets feedback even when no ground truth is available.
+                zonePrCurve.classList.remove('d-none');
+
+                if (prChart) { prChart.destroy(); prChart = null; }
+
+                const hasCurve = pr && Array.isArray(pr.recall) && pr.recall.length > 0;
+                if (!hasCurve) {
+                    prInfo.textContent = "Pas de vérité terrain disponible pour cette requête — courbe PR indisponible.";
+                    const ctxEmpty = document.getElementById('prCanvas').getContext('2d');
+                    ctxEmpty.clearRect(0, 0, ctxEmpty.canvas.width, ctxEmpty.canvas.height);
+                    return;
+                }
+
+                const points = pr.recall.map((r, i) => ({x: r, y: pr.precision[i]}));
+                const ap = (pr.average_precision || 0).toFixed(4);
+                const k = Math.max(0, points.length - 1);
+                prInfo.textContent = descripteur + ' + ' + metrique + '  —  AP@' + k + ' = ' + ap;
+
+                const ctx = document.getElementById('prCanvas').getContext('2d');
+                prChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Précision / Rappel',
+                            data: points,
+                            borderColor: '#EB4242',
+                            backgroundColor: 'rgba(235, 66, 66, 0.15)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0,
+                            fill: true,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear', min: 0, max: 1,
+                                title: {display: true, text: 'Rappel', color: '#fff'},
+                                ticks: {color: '#ccc'}, grid: {color: 'rgba(255,255,255,0.1)'},
+                            },
+                            y: {
+                                min: 0, max: 1.05,
+                                title: {display: true, text: 'Précision', color: '#fff'},
+                                ticks: {color: '#ccc'}, grid: {color: 'rgba(255,255,255,0.1)'},
+                            },
+                        },
+                        plugins: {
+                            legend: {labels: {color: '#fff'}},
+                        },
+                    },
+                });
+            }
+
             btnLancerRecherche.addEventListener('click', function() {
                 const imageChargee = uploadImage.files && uploadImage.files[0];
                 const imageRecherche = barreRecherche.value.trim() !== "";
                 const aUneImage = imageRecherche || imageChargee;
                 const topValue = TopInput.value.trim();
-                const descripteurSelectionne = (orbCheck.checked || siftCheck.checked || hogCheck.checked || vitCheck.checked || ResCheck.checked || metricsLearningCheck.checked);
-                const metriqueSelectionnee = (euclidienneCheck.checked || cosinusCheck.checked || chiCarreCheck.checked || bhattacharyyaCheck.checked);
-                if (!aUneImage || !descripteurSelectionne || !metriqueSelectionnee || topValue === '') {
-                    msgErreur.textContent = "Veuillez sélectionner une image, ainsi que de remplir et compléter les différents critères avant de lancer la recherche.";
+                const descripteurs = descripteursChoisis();
+                const metrique = metriqueChoisie();
+
+                if (!aUneImage || descripteurs.length === 0 || !metrique || topValue === '') {
+                    msgErreur.textContent = "Veuillez sélectionner une image, au moins un descripteur, une métrique et un top-K avant de lancer la recherche.";
                     msgErreur.classList.remove('d-none');
+                    return;
+                }
+                msgErreur.classList.add('d-none');
+
+                zoneResultats.classList.add('d-none');
+                zonePrCurve.classList.add('d-none');
+                msgChargement.classList.remove('d-none');
+
+                const descripteurLabel = descripteurs.length === 1
+                    ? descripteurs[0]
+                    : descripteurs.join(' + ') + ' (RRF)';
+
+                let fetchOpts;
+                if (imageChargee) {
+                    // Multipart: uploaded image — try to infer a label from the file name
+                    // (keeps the PR curve meaningful for queries named like the dataset).
+                    const fd = new FormData();
+                    fd.append('image', imageChargee);
+                    descripteurs.forEach(d => fd.append('descriptors', d));
+                    fd.append('metric', metrique);
+                    fd.append('top_k', String(parseInt(topValue, 10)));
+                    const parts = imageChargee.name.split('_');
+                    if (parts.length >= 2 && /^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1])) {
+                        fd.append('query_label', parts[0] + '_' + parts[1]);
+                    }
+                    fetchOpts = {method: 'POST', body: fd};
                 } else {
-                    msgErreur.classList.add('d-none');
-                };
-            });    
+                    fetchOpts = {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            filename: barreRecherche.value.trim(),
+                            descriptors: descripteurs,
+                            metric: metrique,
+                            top_k: parseInt(topValue, 10),
+                        }),
+                    };
+                }
+
+                fetch('/api/search', fetchOpts)
+                .then(r => r.json().then(data => ({ok: r.ok, data: data})))
+                .then(({ok, data}) => {
+                    msgChargement.classList.add('d-none');
+                    if (!ok || data.erreur) {
+                        msgErreur.textContent = data.erreur || "Erreur lors de la recherche.";
+                        msgErreur.classList.remove('d-none');
+                        return;
+                    }
+                    afficherResultats(data.results || []);
+                    afficherPrCurve(data.pr_curve, descripteurLabel, metrique);
+                })
+                .catch(err => {
+                    msgChargement.classList.add('d-none');
+                    msgErreur.textContent = "Erreur réseau: " + err;
+                    msgErreur.classList.remove('d-none');
+                });
+            });
+
     </script>
 </body>
 </html>

@@ -91,6 +91,29 @@
       <button class="btn btn-danger btn-lg fw-bold shadow-sm" id="btnLancerRecherche">Lancer la recherche</button>
     </div>
 
+    <!-- Zone d'affichage des résultats CLIP + FAISS -->
+    <div class="container mb-5">
+      <div id="zoneResultats" class="d-none">
+        <h3 class="text-center mb-4">Résultats</h3>
+        <div id="gridResultats" class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3"></div>
+
+        <div id="zonePrCurve" class="mt-5 d-none">
+          <h3 class="text-center mb-3">Courbe Précision / Rappel</h3>
+          <div id="prInfo" class="text-center text-body-secondary small mb-2"></div>
+          <div class="bg-dark bg-opacity-75 rounded-3 p-3 mx-auto" style="max-width: 700px;">
+            <div style="position: relative; height: 360px; width: 100%;">
+              <canvas id="prCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="msgChargement" class="text-center d-none">
+        <div class="spinner-border text-light" role="status"></div>
+        <div class="mt-2">Recherche en cours...</div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 
     <!--Script-->
     <script>
@@ -156,23 +179,142 @@
     const btnLancerRecherche = document.getElementById('btnLancerRecherche');
     const TopInput = document.getElementById('inputTop');
     const msgErreur = document.getElementById('msgErreur');
+    const zoneResultats = document.getElementById('zoneResultats');
+    const gridResultats = document.getElementById('gridResultats');
+    const msgChargement = document.getElementById('msgChargement');
+    const zonePrCurve = document.getElementById('zonePrCurve');
+    const prInfo = document.getElementById('prInfo');
+    let prChart = null;
+
+    function afficherResultats(results) {
+        gridResultats.innerHTML = '';
+        results.forEach((r, i) => {
+            const col = document.createElement('div');
+            col.className = 'col';
+            col.innerHTML =
+                '<div class="card bg-dark bg-opacity-75 text-white border-0 shadow-sm h-100" data-bs-theme="dark">' +
+                '  <img src="/flickr_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
+                '  <div class="card-body p-2">' +
+                '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
+                '    <div class="small text-body-secondary">score: ' + r.score.toFixed(4) + '</div>' +
+                '  </div>' +
+                '</div>';
+            gridResultats.appendChild(col);
+        });
+        zoneResultats.classList.remove('d-none');
+    }
+
+    function afficherPrCurve(pr, titre) {
+        zonePrCurve.classList.remove('d-none');
+        if (prChart) { prChart.destroy(); prChart = null; }
+
+        const hasCurve = pr && Array.isArray(pr.recall) && pr.recall.length > 0;
+        if (!hasCurve) {
+            prInfo.textContent = "Pas de vérité terrain disponible — aucune légende Flickr8k ne correspond à la requête.";
+            const ctxEmpty = document.getElementById('prCanvas').getContext('2d');
+            ctxEmpty.clearRect(0, 0, ctxEmpty.canvas.width, ctxEmpty.canvas.height);
+            return;
+        }
+
+        const points = pr.recall.map((r, i) => ({x: r, y: pr.precision[i]}));
+        const ap = (pr.average_precision || 0).toFixed(4);
+        const k = Math.max(0, points.length - 1);
+        const rel = pr.total_relevant != null ? ' (R = ' + pr.total_relevant + ')' : '';
+        prInfo.textContent = titre + '  —  AP@' + k + ' = ' + ap + rel;
+
+        const ctx = document.getElementById('prCanvas').getContext('2d');
+        prChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Précision / Rappel',
+                    data: points,
+                    borderColor: '#EB4242',
+                    backgroundColor: 'rgba(235, 66, 66, 0.15)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0,
+                    fill: true,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear', min: 0, max: 1,
+                        title: {display: true, text: 'Rappel', color: '#fff'},
+                        ticks: {color: '#ccc'}, grid: {color: 'rgba(255,255,255,0.1)'},
+                    },
+                    y: {
+                        min: 0, max: 1.05,
+                        title: {display: true, text: 'Précision', color: '#fff'},
+                        ticks: {color: '#ccc'}, grid: {color: 'rgba(255,255,255,0.1)'},
+                    },
+                },
+                plugins: {
+                    legend: {labels: {color: '#fff'}},
+                },
+            },
+        });
+    }
+
     btnLancerRecherche.addEventListener('click', function() {
         const texteRecherche = barreRecherche.value.trim();
         const imageChargee = uploadImage.files && uploadImage.files[0];
         const topValue = TopInput.value.trim();
 
         if (texteRecherche === '' && !imageChargee) {
-            // Afficher un message d'erreur si aucun mode de recherche n'est sélectionné
             msgErreur.textContent = "Veuillez saisir un texte ou sélectionner une image avant de lancer la recherche.";
             msgErreur.classList.remove('d-none');
-        } else if (topValue === '') {
-            // Afficher un message d'erreur si le champ 'Choix du top' n'est pas rempli
+            return;
+        }
+        if (topValue === '') {
             msgErreur.textContent = "Veuillez remplir le champ 'Choix du top' avant de lancer la recherche.";
             msgErreur.classList.remove('d-none');
-        } else {
-            // Masquer le message d'erreur et lancer la recherche
-            msgErreur.classList.add('d-none');
+            return;
         }
+        msgErreur.classList.add('d-none');
+
+        zoneResultats.classList.add('d-none');
+        zonePrCurve.classList.add('d-none');
+        msgChargement.classList.remove('d-none');
+
+        const titreCurve = imageChargee
+            ? ('CLIP image → image  ·  ' + imageChargee.name)
+            : ('CLIP texte → image  ·  "' + texteRecherche + '"');
+
+        let fetchOpts;
+        if (imageChargee) {
+            const fd = new FormData();
+            fd.append('image', imageChargee);
+            fd.append('top_k', topValue);
+            fetchOpts = {method: 'POST', body: fd};
+        } else {
+            fetchOpts = {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: texteRecherche, top_k: parseInt(topValue, 10)}),
+            };
+        }
+
+        fetch('/api/search_multimodal', fetchOpts)
+            .then(r => r.json().then(data => ({ok: r.ok, data: data})))
+            .then(({ok, data}) => {
+                msgChargement.classList.add('d-none');
+                if (!ok || data.erreur) {
+                    msgErreur.textContent = data.erreur || "Erreur lors de la recherche.";
+                    msgErreur.classList.remove('d-none');
+                    return;
+                }
+                afficherResultats(data.results || []);
+                afficherPrCurve(data.pr_curve, titreCurve);
+            })
+            .catch(err => {
+                msgChargement.classList.add('d-none');
+                msgErreur.textContent = "Erreur réseau: " + err;
+                msgErreur.classList.remove('d-none');
+            });
     });
 
     </script>

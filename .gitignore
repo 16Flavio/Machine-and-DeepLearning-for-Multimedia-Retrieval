@@ -5,7 +5,13 @@ data/
 .env
 
 wandb/
+notebooks/wandb/
+
+__pycache__/
+*.pyc
 
 *.pth
-
 *.npy
+*.pdf
+
+results/features/
