@@ -5,7 +5,24 @@ data/
 .env
 
 wandb/
+notebooks/wandb/
+
+__pycache__/
+*.pyc
 
 *.pth
-
 *.npy
+*.pdf
+
+results/features/
+
+*.aux
+*.bbl
+*.bcf
+*fdb_latexmk
+*.fls
+*.log
+*.xml
+*.gz
+*.synctex(busy)
+*.toc

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Projet de MIR</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <style>
+        body {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('Images/image_fond.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .btn-custom {
+            background-color: #E0BFBF !important;
+            color: black !important;
+            border: 1px solid #5c636a !important;
+        }
+        .btn-check:checked + .btn-custom {
+            background-color: #EB4242 !important;
+            color: white !important;
+            border-color: red !important;
+        }
+        .bouton-grise {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="text-white"> 
+    <!-- En-tête de la page -->
+    <div class="container">
+        <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
+        
+        <a href="/" class="d-flex align-items-center mb-3 mb-md-0 link-body-emphasis text-decoration-none">
+            <img src="Images/Symbole FPMs.png" alt="Symbole FPMs" height="32" class="me-3">
+            <span class="fs-4 fw-bold">Projet de Multimedia Information Retrieval</span>
+        </a>
+        </header>
+    </div> 
+
+    <!-- Switch entre la partie 2 et 3 -->
+    <ul class="nav nav-pills nav-fill gap-2 p-1 small rounded-5 shadow-sm mt-4" id="pillNav2" role="tablist" 
+    style="
+      background-color: #E0BFBF;
+      --bs-nav-link-color: black; 
+      --bs-nav-pills-link-active-color: white; 
+      --bs-nav-pills-link-active-bg: #EB4242;
+      --bs-nav-link-hover-color: white;
+    ">
+      <li class="nav-item" role="Moteur de recherche multi modal">
+        <a class="nav-link rounded-5 fw-bold" href="index.html">Moteur de recherche multi modal</a>
+      </li>
+      <li class="nav-item" role="Moteur de recherche d'image uni modal à deux niveaux">
+        <a class="nav-link active rounded-5 fw-bold" href="index2.html">Moteur de recherche d'image uni modal à deux niveaux</a>
+      </li>
+    </ul>
+
+    <!-- Contenu de la page -->
+    <div class="container mt-4">
+      <h1 class="mb-4">Moteur de recherche d'image uni modal à deux niveaux</h1>
+        <p class="lead">Cette partie présente notre moteur de recherche d'image uni modal à deux niveaux. Il s'agit d'un moteur de recherche d'image qui utilise une approche en deux étapes pour améliorer la précision des résultats.</p>
+    </div>
+    <div class="container text-center mt-4 mb-5">
+        <h2>Image de requête</h2>
+        
+        <div class="d-flex justify-content-center align-items-center gap-3 mt-4 flex-wrap">
+            
+            <div class="position-relative w-50" style="min-width: 250px;">
+                <input type="text" id="barreRecherche" class="form-control" placeholder="Entrez le nom d'une image requête..." autocomplete="off">
+                <ul id="listeAutocompletion" class="list-group position-absolute w-100 d-none text-dark text-start shadow" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                </ul>
+            </div>
+
+            <span class="fw-bold">OU</span>
+
+            <div>
+                <input type="file" id="uploadImage" class="form-control" accept="image/*">
+            </div>
+        </div>
+        <div class="mt-4">
+            <img id="apercuImage" src="" alt="Aperçu de votre image" class="img-fluid rounded shadow-lg d-none" style="max-height: 350px;">
+        </div>
+        <div>L'image sélectionnée apparaît ici.</div>
+    </div>
+
+    <div class="d-flex flex-column align-items-center my-5">
+        <h3>Choix des descripteurs</h3>
+        <div class="btn-group mt-3 shadow-sm" role="group" aria-label="Choix des méthodes">
+
+            <input type="checkbox" class="btn-check" id="btncheck1" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck1">ORB</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck2" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck2">SIFT</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck3" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck3">HOG</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck4" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck4">ConvNext Classifier</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck5" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck5">ConvNext Metric</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck6" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck6">ViT Metric</label>
+        </div>
+    </div>
+    <div class="d-flex flex-column align-items-center my-5">
+        <h3>Choix des métriques</h3>
+        <div class="btn-group mt-3 shadow-sm" role="group" aria-label="Choix des méthodes">
+
+            <input type="checkbox" class="btn-check" id="btncheck1_1" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck1_1">Euclidienne</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck1_2" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck1_2">Cosinus</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck1_3" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck1_3">Chi carré</label>
+
+            <input type="checkbox" class="btn-check" id="btncheck1_4" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btncheck1_4">Bhattacharyya</label>
+        </div>
+    </div>
+    <div class="d-flex flex-column align-items-center my-5">
+      <h3>Choix du top</h3>
+
+      <div class="input-group mb-3 w-50">
+          <input type="number" id="inputTop" class="form-control" placeholder="Entrez un chiffre..." min="1">
+      </div>
+    </div>
+    <div class="d-flex flex-column align-items-center my-5">
+        <h3>Analyse complémentaire</h3>
+        <div class="btn-group mt-3 shadow-sm" role="group" aria-label="Options d'analyse">
+            <input type="checkbox" class="btn-check" id="btnToggleProj3d" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btnToggleProj3d">Visualisation 3D (UMAP)</label>
+        </div>
+    </div>
+    <div id="msgErreur" class="text-danger mt-3 fw-bold d-none">
+        <i class="bi bi-exclamation-triangle"></i> Veuillez sélectionner une image, ainsi que de remplir et compléter les différents critères avant de lancer la recherche.
+    </div>
+    <div class="d-flex flex-column align-items-center my-5">
+      <button class="btn btn-danger btn-lg fw-bold shadow-sm" id="btnLancerRecherche">Lancer la recherche</button>
+    </div>
+
+    <!-- Zone d'affichage des résultats renvoyés par /api/search -->
+    <div class="container mb-5">
+      <div id="zoneResultats" class="d-none">
+        <h3 class="text-center mb-4">Résultats</h3>
+        <div id="gridResultats" class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3"></div>
+
+        <div id="zonePrCurve" class="mt-5 d-none">
+          <h3 class="text-center mb-3">Courbe Précision / Rappel</h3>
+          <div id="prInfo" class="text-center text-light small mb-2 fw-semibold"></div>
+          <div class="bg-dark bg-opacity-75 rounded-3 p-3 mx-auto" style="max-width: 700px;">
+            <div style="position: relative; height: 360px; width: 100%;">
+              <canvas id="prCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="msgChargement" class="text-center d-none">
+        <div class="spinner-border text-light" role="status"></div>
+        <div class="mt-2">Recherche en cours...</div>
+      </div>
+    </div>
+
+    <!-- Visualisation 3D des descripteurs -->
+    <div id="zoneProj3d" class="container mb-5 d-none">
+      <h3 class="text-center mb-3">Visualisation 3D des descripteurs (UMAP)</h3>
+      <p class="text-center text-light small">
+        Projection UMAP en 3D des features de la gallery, colorée par classe.
+      </p>
+      <div class="d-flex justify-content-center mb-3">
+        <div class="btn-group flex-wrap shadow-sm" role="group" aria-label="Descripteur 3D">
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_ORB" value="ORB" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_ORB">ORB</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_SIFT" value="SIFT" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_SIFT">SIFT</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_HOG" value="HOG" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_HOG">HOG</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_ConvNextClassifier" value="ConvNextClassifier" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_ConvNextClassifier">ConvNext Classifier</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_ConvNextMetric" value="ConvNextMetric" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_ConvNextMetric">ConvNext Metric</label>
+          <input type="radio" class="btn-check" name="proj3dDesc" id="proj3d_VitMetric" value="VitMetric" autocomplete="off">
+          <label class="btn btn-custom fw-bold" for="proj3d_VitMetric">ViT Metric</label>
+        </div>
+      </div>
+      <div id="proj3dInfo" class="text-center text-light small mb-2">
+        Sélectionnez un descripteur pour afficher la projection.
+      </div>
+      <div id="proj3dError" class="text-danger text-center small mb-2 d-none"></div>
+      <div id="proj3dLoading" class="text-center d-none">
+        <div class="spinner-border text-light" role="status"></div>
+        <div class="mt-2 small">Calcul de la projection...</div>
+      </div>
+      <div class="bg-dark bg-opacity-75 rounded-3 p-2 mx-auto" style="max-width: 900px;">
+        <div id="proj3dPlot" style="width: 100%; height: 520px;"></div>
+      </div>
+    </div>
+
+    <!-- Pied de la page -->
+    <div class="container">
+      <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
+        <p class="col-md-4 mb-0 text-light">
+          &copy; Canfyn Marie, Drogo Flavio, 2026
+        </p>
+        <a href="/" class="col-md-4 d-flex align-items-center justify-content-end mb-3 mb-md-0 link-body-emphasis text-decoration-none">
+          <img src="Images/Symbole FPMs.png" alt="Symbole FPMs" height="32">
+        </a>
+        
+      </footer>
+    </div>
+
+    <!-- Scipts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmxc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+    <script>
+        // Partie concernant les associations de boutons possibles 
+        const vitCheck = document.getElementById('btncheck5');
+        const ResCheck = document.getElementById('btncheck4');
+        const orbCheck = document.getElementById('btncheck1');
+        const siftCheck = document.getElementById('btncheck2');
+        const hogCheck = document.getElementById('btncheck3');
+        const metricsLearningCheck = document.getElementById('btncheck6');
+        const orbLabel = document.querySelector('label[for="btncheck1"]');
+        const siftLabel = document.querySelector('label[for="btncheck2"]');
+        const hogLabel = document.querySelector('label[for="btncheck3"]');
+        const vitLabel = document.querySelector('label[for="btncheck5"]');
+        const ResLabel = document.querySelector('label[for="btncheck4"]');
+        const metricsLearningLabel = document.querySelector('label[for="btncheck6"]');
+        const euclidienneCheck = document.getElementById('btncheck1_1');
+        const cosinusCheck = document.getElementById('btncheck1_2');
+        const chiCarreCheck = document.getElementById('btncheck1_3');
+        const bhattacharyyaCheck = document.getElementById('btncheck1_4');
+        const euclidienneLabel = document.querySelector('label[for="btncheck1_1"]');
+        const cosinusLabel = document.querySelector('label[for="btncheck1_2"]');
+        const chiCarreLabel = document.querySelector('label[for="btncheck1_3"]');
+        const bhattacharyyaLabel = document.querySelector('label[for="btncheck1_4"]');
+        // Descripteurs : multi-select libre — la fusion des classements est faite
+        // côté serveur via Reciprocal Rank Fusion. Aucune exclusivité mutuelle.
+        euclidienneCheck.addEventListener('change', function() {
+            if (this.checked) {
+                cosinusCheck.checked = false;
+                chiCarreCheck.checked = false;
+                bhattacharyyaCheck.checked = false;
+                cosinusCheck.disabled = true;
+                chiCarreCheck.disabled = true;
+                bhattacharyyaCheck.disabled = true;
+                cosinusLabel.classList.add('bouton-grise');
+                chiCarreLabel.classList.add('bouton-grise');
+                bhattacharyyaLabel.classList.add('bouton-grise');
+            } else {
+                cosinusCheck.disabled = false;
+                chiCarreCheck.disabled = false;
+                bhattacharyyaCheck.disabled = false;
+                cosinusLabel.classList.remove('bouton-grise');
+                chiCarreLabel.classList.remove('bouton-grise');
+                bhattacharyyaLabel.classList.remove('bouton-grise');
+            }
+          })
+        chiCarreCheck.addEventListener('change', function() {
+            if (this.checked) {
+                cosinusCheck.checked = false;
+                euclidienneCheck.checked = false;
+                bhattacharyyaCheck.checked = false;
+                cosinusCheck.disabled = true;
+                euclidienneCheck.disabled = true;
+                bhattacharyyaCheck.disabled = true;
+                cosinusLabel.classList.add('bouton-grise');
+                euclidienneLabel.classList.add('bouton-grise');
+                bhattacharyyaLabel.classList.add('bouton-grise');
+            } else {
+                cosinusCheck.disabled = false;
+                euclidienneCheck.disabled = false;
+                bhattacharyyaCheck.disabled = false;
+                cosinusLabel.classList.remove('bouton-grise');
+                euclidienneLabel.classList.remove('bouton-grise');
+                bhattacharyyaLabel.classList.remove('bouton-grise');
+            }
+          })
+        cosinusCheck.addEventListener('change', function() {
+            if (this.checked) {
+                chiCarreCheck.checked = false;
+                euclidienneCheck.checked = false;
+                bhattacharyyaCheck.checked = false;
+                chiCarreCheck.disabled = true;
+                euclidienneCheck.disabled = true;
+                bhattacharyyaCheck.disabled = true;
+                chiCarreLabel.classList.add('bouton-grise');
+                euclidienneLabel.classList.add('bouton-grise');
+                bhattacharyyaLabel.classList.add('bouton-grise');
+            } else {
+                chiCarreCheck.disabled = false;
+                euclidienneCheck.disabled = false;
+                bhattacharyyaCheck.disabled = false;
+                chiCarreLabel.classList.remove('bouton-grise');
+                euclidienneLabel.classList.remove('bouton-grise');
+                bhattacharyyaLabel.classList.remove('bouton-grise');
+            }
+          })
+        bhattacharyyaCheck.addEventListener('change', function() {
+            if (this.checked) {
+                chiCarreCheck.checked = false;
+                euclidienneCheck.checked = false;
+                cosinusCheck.checked = false;
+                chiCarreCheck.disabled = true;
+                euclidienneCheck.disabled = true;
+                cosinusCheck.disabled = true;
+                chiCarreLabel.classList.add('bouton-grise');
+                euclidienneLabel.classList.add('bouton-grise');
+                cosinusLabel.classList.add('bouton-grise');
+            } else {
+                chiCarreCheck.disabled = false;
+                euclidienneCheck.disabled = false;
+                cosinusCheck.disabled = false;
+                chiCarreLabel.classList.remove('bouton-grise');
+                euclidienneLabel.classList.remove('bouton-grise');
+                cosinusLabel.classList.remove('bouton-grise');
+            }
+          })
+
+        // Partie concernant la barre de recherche d'image et l'upload d'image
+          let imagesConnues = [];
+          fetch('/api/images')
+              .then(response => response.json())
+              .then(data => {
+                  imagesConnues = data;
+                  console.log("Images chargées depuis le serveur :", imagesConnues);
+              })
+              .catch(err => console.error("Erreur lors de la récupération des images :", err));
+
+          const barreRecherche = document.getElementById('barreRecherche');
+          const listeAutocompletion = document.getElementById('listeAutocompletion');
+          const uploadImage = document.getElementById('uploadImage');
+          const apercuImage = document.getElementById('apercuImage');
+          // Autocomplétion de la barre de recherche
+          function mettreAJourListe(texteFiltre = '') {
+              listeAutocompletion.innerHTML = '';
+              
+              // On filtre les images qui contiennent le texte tapé
+              const resultats = imagesConnues.filter(img => 
+                  img.toLowerCase().includes(texteFiltre.toLowerCase())
+              );
+
+              if (resultats.length > 0 && texteFiltre !== '') {
+                  listeAutocompletion.classList.remove('d-none');
+                  resultats.forEach(img => {
+                      const li = document.createElement('li');
+                      li.className = 'list-group-item list-group-item-action';
+                      li.textContent = img;
+                      li.onclick = () => {
+                          barreRecherche.value = img;
+                          listeAutocompletion.classList.add('d-none');
+                          afficherApercu('/cars_dataset/' + img); 
+                      };
+                      listeAutocompletion.appendChild(li);
+                  });
+              } else {
+                  listeAutocompletion.classList.add('d-none');
+              }
+          }
+
+          barreRecherche.addEventListener('input', (e) => mettreAJourListe(e.target.value));
+          uploadImage.addEventListener('change', function(e) {
+              const fichier = e.target.files[0];
+              if (fichier) {
+                  const reader = new FileReader();
+                  reader.onload = function(event) {
+                      afficherApercu(event.target.result);
+                      barreRecherche.value = ''; 
+                  }
+                  reader.readAsDataURL(fichier);
+              }
+          });
+
+          function afficherApercu(sourceImage) {
+              apercuImage.src = sourceImage;
+              apercuImage.classList.remove('d-none');
+          }
+        //Partie pour obliger de cocher chaque critères
+          const btnLancerRecherche = document.getElementById('btnLancerRecherche');
+          const TopInput = document.getElementById('inputTop');
+          const msgErreur = document.getElementById('msgErreur');
+            function descripteursChoisis() {
+                const picks = [];
+                if (orbCheck.checked) picks.push('ORB');
+                if (siftCheck.checked) picks.push('SIFT');
+                if (hogCheck.checked) picks.push('HOG');
+                if (ResCheck.checked) picks.push('ConvNextClassifier');
+                if (vitCheck.checked) picks.push('ConvNextMetric');
+                if (metricsLearningCheck.checked) picks.push('VitMetric');
+                return picks;
+            }
+            function metriqueChoisie() {
+                if (euclidienneCheck.checked) return 'Euclidienne';
+                if (cosinusCheck.checked) return 'Cosinus';
+                if (chiCarreCheck.checked) return 'Chi carré';
+                if (bhattacharyyaCheck.checked) return 'Bhattacharyya';
+                return null;
+            }
+
+            const zoneResultats = document.getElementById('zoneResultats');
+            const gridResultats = document.getElementById('gridResultats');
+            const msgChargement = document.getElementById('msgChargement');
+            const zonePrCurve = document.getElementById('zonePrCurve');
+            const prInfo = document.getElementById('prInfo');
+            let prChart = null;
+
+            function afficherResultats(results) {
+                gridResultats.innerHTML = '';
+                results.forEach((r, i) => {
+                    const col = document.createElement('div');
+                    col.className = 'col';
+                    col.innerHTML =
+                        '<div class="card bg-dark bg-opacity-75 text-white border-0 shadow-sm h-100" data-bs-theme="dark">' +
+                        '  <img src="/cars_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
+                        '  <div class="card-body p-2">' +
+                        '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
+                        '    <div class="small text-light">score: ' + r.score.toFixed(4) + '</div>' +
+                        '  </div>' +
+                        '</div>';
+                    gridResultats.appendChild(col);
+                });
+                zoneResultats.classList.remove('d-none');
+            }
+
+            function afficherPrCurve(pr, descripteur, metrique) {
+                // Always reveal the section so the user gets feedback even when no ground truth is available.
+                zonePrCurve.classList.remove('d-none');
+
+                if (prChart) { prChart.destroy(); prChart = null; }
+
+                const hasCurve = pr && Array.isArray(pr.recall) && pr.recall.length > 0;
+                if (!hasCurve) {
+                    prInfo.textContent = "Pas de vérité terrain disponible pour cette requête — courbe PR indisponible.";
+                    const ctxEmpty = document.getElementById('prCanvas').getContext('2d');
+                    ctxEmpty.clearRect(0, 0, ctxEmpty.canvas.width, ctxEmpty.canvas.height);
+                    return;
+                }
+
+                const points = pr.recall.map((r, i) => ({x: r, y: pr.precision[i]}));
+                const ap = (pr.average_precision || 0).toFixed(4);
+                const k = Math.max(0, points.length - 1);
+                prInfo.textContent = descripteur + ' + ' + metrique + '  —  AP@' + k + ' = ' + ap;
+
+                const ctx = document.getElementById('prCanvas').getContext('2d');
+                prChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Précision / Rappel',
+                            data: points,
+                            borderColor: '#EB4242',
+                            backgroundColor: 'rgba(235, 66, 66, 0.15)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0,
+                            fill: true,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear', min: 0, max: 1,
+                                title: {display: true, text: 'Rappel', color: '#fff'},
+                                ticks: {color: '#ccc'}, grid: {color: 'rgba(255,255,255,0.1)'},
+                            },
+                            y: {
+                                min: 0, max: 1.05,
+                                title: {display: true, text: 'Précision', color: '#fff'},
+                                ticks: {color: '#ccc'}, grid: {color: 'rgba(255,255,255,0.1)'},
+                            },
+                        },
+                        plugins: {
+                            legend: {labels: {color: '#fff'}},
+                        },
+                    },
+                });
+            }
+
+            btnLancerRecherche.addEventListener('click', function() {
+                const imageChargee = uploadImage.files && uploadImage.files[0];
+                const imageRecherche = barreRecherche.value.trim() !== "";
+                const aUneImage = imageRecherche || imageChargee;
+                const topValue = TopInput.value.trim();
+                const descripteurs = descripteursChoisis();
+                const metrique = metriqueChoisie();
+
+                if (!aUneImage || descripteurs.length === 0 || !metrique || topValue === '') {
+                    msgErreur.textContent = "Veuillez sélectionner une image, au moins un descripteur, une métrique et un top-K avant de lancer la recherche.";
+                    msgErreur.classList.remove('d-none');
+                    return;
+                }
+                msgErreur.classList.add('d-none');
+
+                zoneResultats.classList.add('d-none');
+                zonePrCurve.classList.add('d-none');
+                msgChargement.classList.remove('d-none');
+
+                const descripteurLabel = descripteurs.length === 1
+                    ? descripteurs[0]
+                    : descripteurs.join(' + ') + ' (RRF)';
+
+                let fetchOpts;
+                if (imageChargee) {
+                    // Multipart: uploaded image — try to infer a label from the file name
+                    // (keeps the PR curve meaningful for queries named like the dataset).
+                    const fd = new FormData();
+                    fd.append('image', imageChargee);
+                    descripteurs.forEach(d => fd.append('descriptors', d));
+                    fd.append('metric', metrique);
+                    fd.append('top_k', String(parseInt(topValue, 10)));
+                    const parts = imageChargee.name.split('_');
+                    if (parts.length >= 2 && /^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1])) {
+                        fd.append('query_label', parts[0] + '_' + parts[1]);
+                    }
+                    fetchOpts = {method: 'POST', body: fd};
+                } else {
+                    fetchOpts = {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            filename: barreRecherche.value.trim(),
+                            descriptors: descripteurs,
+                            metric: metrique,
+                            top_k: parseInt(topValue, 10),
+                        }),
+                    };
+                }
+
+                fetch('/api/search', fetchOpts)
+                .then(r => r.json().then(data => ({ok: r.ok, data: data})))
+                .then(({ok, data}) => {
+                    msgChargement.classList.add('d-none');
+                    if (!ok || data.erreur) {
+                        msgErreur.textContent = data.erreur || "Erreur lors de la recherche.";
+                        msgErreur.classList.remove('d-none');
+                        return;
+                    }
+                    afficherResultats(data.results || []);
+                    afficherPrCurve(data.pr_curve, descripteurLabel, metrique);
+                })
+                .catch(err => {
+                    msgChargement.classList.add('d-none');
+                    msgErreur.textContent = "Erreur réseau: " + err;
+                    msgErreur.classList.remove('d-none');
+                });
+            });
+
+        // Projection 3D des descripteurs (PCA)
+        const proj3dInfo = document.getElementById('proj3dInfo');
+        const proj3dError = document.getElementById('proj3dError');
+        const proj3dLoading = document.getElementById('proj3dLoading');
+        const proj3dPlot = document.getElementById('proj3dPlot');
+
+        function groupByLabel(data) {
+            const groups = {};
+            for (let i = 0; i < data.labels.length; i++) {
+                const lab = data.labels[i];
+                if (!groups[lab]) groups[lab] = {x: [], y: [], z: [], text: []};
+                groups[lab].x.push(data.x[i]);
+                groups[lab].y.push(data.y[i]);
+                groups[lab].z.push(data.z[i]);
+                groups[lab].text.push(data.filenames[i] || '');
+            }
+            return groups;
+        }
+
+        function renderProj3d(data) {
+            const groups = groupByLabel(data);
+            const traces = Object.keys(groups).sort().map(lab => ({
+                type: 'scatter3d',
+                mode: 'markers',
+                name: 'classe ' + lab,
+                x: groups[lab].x,
+                y: groups[lab].y,
+                z: groups[lab].z,
+                text: groups[lab].text,
+                hovertemplate: '%{text}<br>classe: ' + lab + '<extra></extra>',
+                marker: {size: 3.5, opacity: 0.85},
+            }));
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: {color: '#fff'},
+                margin: {l: 0, r: 0, t: 10, b: 0},
+                legend: {font: {color: '#fff'}, bgcolor: 'rgba(0,0,0,0)'},
+                scene: {
+                    xaxis: {title: 'UMAP-1', color: '#ccc', gridcolor: 'rgba(255,255,255,0.15)'},
+                    yaxis: {title: 'UMAP-2', color: '#ccc', gridcolor: 'rgba(255,255,255,0.15)'},
+                    zaxis: {title: 'UMAP-3', color: '#ccc', gridcolor: 'rgba(255,255,255,0.15)'},
+                },
+            };
+            Plotly.react(proj3dPlot, traces, layout, {responsive: true, displaylogo: false});
+
+            proj3dInfo.textContent =
+                data.descriptor + ' — UMAP 3D · ' + data.n_shown + '/' + data.n_total +
+                ' points · n_neighbors = ' + data.n_neighbors;
+        }
+
+        // Toggle d'affichage de la section projection 3D
+        const btnToggleProj3d = document.getElementById('btnToggleProj3d');
+        const zoneProj3d = document.getElementById('zoneProj3d');
+        btnToggleProj3d.addEventListener('change', function() {
+            if (this.checked) {
+                zoneProj3d.classList.remove('d-none');
+            } else {
+                zoneProj3d.classList.add('d-none');
+            }
+        });
+
+        document.querySelectorAll('input[name="proj3dDesc"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (!this.checked) return;
+                const desc = this.value;
+                proj3dError.classList.add('d-none');
+                proj3dLoading.classList.remove('d-none');
+                proj3dInfo.textContent = 'Chargement de ' + desc + '...';
+                fetch('/api/projection_3d?descriptor=' + encodeURIComponent(desc))
+                    .then(r => r.json().then(data => ({ok: r.ok, data})))
+                    .then(({ok, data}) => {
+                        proj3dLoading.classList.add('d-none');
+                        if (!ok || data.erreur) {
+                            proj3dError.textContent = data.erreur || 'Erreur lors du chargement.';
+                            proj3dError.classList.remove('d-none');
+                            proj3dInfo.textContent = '';
+                            return;
+                        }
+                        renderProj3d(data);
+                    })
+                    .catch(err => {
+                        proj3dLoading.classList.add('d-none');
+                        proj3dError.textContent = 'Erreur réseau: ' + err;
+                        proj3dError.classList.remove('d-none');
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

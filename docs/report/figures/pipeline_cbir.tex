@@ -1,0 +1,47 @@
+\begin{tikzpicture}[
+    font=\small,
+    node distance=0.9cm and 1.1cm,
+    box/.style={draw, rounded corners, minimum height=0.9cm, 
+                minimum width=1.8cm, align=center, fill=blue!8},
+    phi/.style={draw, circle, minimum size=0.9cm, fill=orange!25, 
+                font=\footnotesize},
+    index/.style={draw, rounded corners, minimum height=1.1cm, 
+                  minimum width=2.2cm, align=center, fill=green!12},
+    arrow/.style={-{Latex[length=2mm]}, thick},
+    dashedarrow/.style={-{Latex[length=2mm]}, thick, dashed}
+]
+
+% --- Offline branch ---
+\node[box] (corpus) {Corpus\\$\{I_1,\dots,I_N\}$};
+\node[phi, right=of corpus] (phi1) {$\varphi$};
+\node[box, right=of phi1] (desc) {Descripteurs\\$\varphi(I_i)\in\mathbb{R}^d$};
+\node[index, right=of desc] (idx) {Index\\(FAISS, kNN)};
+
+\draw[arrow] (corpus) -- (phi1);
+\draw[arrow] (phi1) -- (desc);
+\draw[arrow] (desc) -- (idx);
+
+% --- Online branch ---
+\node[box, below=1.4cm of corpus, fill=red!8] (query) {Requête\\$I_q$};
+\node[phi, right=of query] (phi2) {$\varphi$};
+\node[box, right=of phi2, fill=red!8] (qdesc) {$\varphi(I_q)$};
+
+\draw[arrow] (query) -- (phi2);
+\draw[arrow] (phi2) -- (qdesc);
+
+% --- Similarity search ---
+\node[box, right=1.4cm of qdesc, fill=yellow!20] (sim) 
+     {Recherche\\$s(\varphi(I_q),\varphi(I_j))$};
+\node[box, right=of sim] (topk) {Top-$k$\\images};
+
+\draw[arrow] (qdesc) -- (sim);
+\draw[dashedarrow] (idx) -- (sim);
+\draw[arrow] (sim) -- (topk);
+
+% --- Labels hors-ligne / en ligne ---
+% \node[anchor=west, font=\footnotesize\itshape] 
+%      at ([xshift=-1.2cm]corpus.west) {Hors-ligne};
+% \node[anchor=west, font=\footnotesize\itshape] 
+%      at ([xshift=-1.2cm]query.west) {En ligne};
+
+\end{tikzpicture}
