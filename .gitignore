@@ -15,3 +15,14 @@ __pycache__/
 *.pdf
 
 results/features/
+
+*.aux
+*.bbl
+*.bcf
+*fdb_latexmk
+*.fls
+*.log
+*.xml
+*.gz
+*.synctex(busy)
+*.toc
