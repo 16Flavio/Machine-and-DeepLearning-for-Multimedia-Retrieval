@@ -99,7 +99,7 @@
 
         <div id="zonePrCurve" class="mt-5 d-none">
           <h3 class="text-center mb-3">Courbe Précision / Rappel</h3>
-          <div id="prInfo" class="text-center text-body-secondary small mb-2"></div>
+          <div id="prInfo" class="text-center text-light small mb-2 fw-semibold"></div>
           <div class="bg-dark bg-opacity-75 rounded-3 p-3 mx-auto" style="max-width: 700px;">
             <div style="position: relative; height: 360px; width: 100%;">
               <canvas id="prCanvas"></canvas>
@@ -196,7 +196,7 @@
                 '  <img src="/flickr_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
                 '  <div class="card-body p-2">' +
                 '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
-                '    <div class="small text-body-secondary">score: ' + r.score.toFixed(4) + '</div>' +
+                '    <div class="small text-light">score: ' + r.score.toFixed(4) + '</div>' +
                 '  </div>' +
                 '</div>';
             gridResultats.appendChild(col);
@@ -323,7 +323,7 @@
     <!-- Pied de la page -->
     <div class="container">
       <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
-        <p class="col-md-4 mb-0 text-body-secondary">
+        <p class="col-md-4 mb-0 text-light">
           &copy; Canfyn Marie, Drogo Flavio, 2026
         </p>
         <a href="/" class="col-md-4 d-flex align-items-center justify-content-end mb-3 mb-md-0 link-body-emphasis text-decoration-none">

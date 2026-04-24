@@ -130,10 +130,17 @@
     </div>
     <div class="d-flex flex-column align-items-center my-5">
       <h3>Choix du top</h3>
-      
-      <div class="input-group mb-3 w-50">          
+
+      <div class="input-group mb-3 w-50">
           <input type="number" id="inputTop" class="form-control" placeholder="Entrez un chiffre..." min="1">
       </div>
+    </div>
+    <div class="d-flex flex-column align-items-center my-5">
+        <h3>Analyse complémentaire</h3>
+        <div class="btn-group mt-3 shadow-sm" role="group" aria-label="Options d'analyse">
+            <input type="checkbox" class="btn-check" id="btnToggleProj3d" autocomplete="off">
+            <label class="btn btn-custom fw-bold" for="btnToggleProj3d">Visualisation 3D (UMAP)</label>
+        </div>
     </div>
     <div id="msgErreur" class="text-danger mt-3 fw-bold d-none">
         <i class="bi bi-exclamation-triangle"></i> Veuillez sélectionner une image, ainsi que de remplir et compléter les différents critères avant de lancer la recherche.
@@ -150,7 +157,7 @@
 
         <div id="zonePrCurve" class="mt-5 d-none">
           <h3 class="text-center mb-3">Courbe Précision / Rappel</h3>
-          <div id="prInfo" class="text-center text-body-secondary small mb-2"></div>
+          <div id="prInfo" class="text-center text-light small mb-2 fw-semibold"></div>
           <div class="bg-dark bg-opacity-75 rounded-3 p-3 mx-auto" style="max-width: 700px;">
             <div style="position: relative; height: 360px; width: 100%;">
               <canvas id="prCanvas"></canvas>
@@ -165,9 +172,9 @@
     </div>
 
     <!-- Visualisation 3D des descripteurs -->
-    <div class="container mb-5">
+    <div id="zoneProj3d" class="container mb-5 d-none">
       <h3 class="text-center mb-3">Visualisation 3D des descripteurs (UMAP)</h3>
-      <p class="text-center text-body-secondary small">
+      <p class="text-center text-light small">
         Projection UMAP en 3D des features de la gallery, colorée par classe.
       </p>
       <div class="d-flex justify-content-center mb-3">
@@ -186,7 +193,7 @@
           <label class="btn btn-custom fw-bold" for="proj3d_VitMetric">ViT Metric</label>
         </div>
       </div>
-      <div id="proj3dInfo" class="text-center text-body-secondary small mb-2">
+      <div id="proj3dInfo" class="text-center text-light small mb-2">
         Sélectionnez un descripteur pour afficher la projection.
       </div>
       <div id="proj3dError" class="text-danger text-center small mb-2 d-none"></div>
@@ -202,7 +209,7 @@
     <!-- Pied de la page -->
     <div class="container">
       <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top bg-dark bg-opacity-75 rounded-bottom-4" data-bs-theme="dark">
-        <p class="col-md-4 mb-0 text-body-secondary">
+        <p class="col-md-4 mb-0 text-light">
           &copy; Canfyn Marie, Drogo Flavio, 2026
         </p>
         <a href="/" class="col-md-4 d-flex align-items-center justify-content-end mb-3 mb-md-0 link-body-emphasis text-decoration-none">
@@ -418,7 +425,7 @@
                         '  <img src="/cars_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
                         '  <div class="card-body p-2">' +
                         '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
-                        '    <div class="small text-body-secondary">score: ' + r.score.toFixed(4) + '</div>' +
+                        '    <div class="small text-light">score: ' + r.score.toFixed(4) + '</div>' +
                         '  </div>' +
                         '</div>';
                     gridResultats.appendChild(col);
@@ -601,6 +608,17 @@
                 data.descriptor + ' — UMAP 3D · ' + data.n_shown + '/' + data.n_total +
                 ' points · n_neighbors = ' + data.n_neighbors;
         }
+
+        // Toggle d'affichage de la section projection 3D
+        const btnToggleProj3d = document.getElementById('btnToggleProj3d');
+        const zoneProj3d = document.getElementById('zoneProj3d');
+        btnToggleProj3d.addEventListener('change', function() {
+            if (this.checked) {
+                zoneProj3d.classList.remove('d-none');
+            } else {
+                zoneProj3d.classList.add('d-none');
+            }
+        });
 
         document.querySelectorAll('input[name="proj3dDesc"]').forEach(radio => {
             radio.addEventListener('change', function() {
