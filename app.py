@@ -9,7 +9,13 @@ from part1_unimodal.search import (
     search_uploaded as run_search_uploaded,
     projection_3d as run_projection_3d,
 )
-from part2_multimodal.faiss_index import search_text as mm_search_text, search_image as mm_search_image
+from part2_multimodal.faiss_index import (
+    search_text as mm_search_text,
+    search_image as mm_search_image,
+    search_image_to_text as mm_search_image_to_text,
+    list_flickr_filenames as mm_list_flickr_filenames,
+    list_flickr_captions as mm_list_flickr_captions,
+)
 
 app = Flask(__name__, static_folder='Site_Internet', static_url_path='')
 
@@ -37,25 +43,66 @@ def servir_car_image(nom_fichier):
 def servir_flickr_image(nom_fichier):
     return send_from_directory(DOSSIER_FLICKR, nom_fichier)
 
+
+@app.route('/api/flickr_images')
+def liste_flickr_images():
+    try:
+        return jsonify(mm_list_flickr_filenames())
+    except FileNotFoundError as e:
+        return jsonify({"erreur": f"Index CLIP manquant: {e}"}), 500
+
+
+@app.route('/api/flickr_captions')
+def liste_flickr_captions():
+    q = (request.args.get('q') or '').strip()
+    try:
+        limit = int(request.args.get('limit') or 20)
+    except (TypeError, ValueError):
+        limit = 20
+    limit = max(1, min(limit, 200))
+    try:
+        return jsonify(mm_list_flickr_captions(q, limit))
+    except FileNotFoundError as e:
+        return jsonify({"erreur": f"Index texte CLIP manquant: {e}"}), 500
+
 @app.route('/api/search_multimodal', methods=['POST'])
 def api_search_multimodal():
+    json_body = request.get_json(silent=True) or {}
     try:
-        top_k = int(request.form.get('top_k') or (request.get_json(silent=True) or {}).get('top_k') or 10)
+        top_k = int(request.form.get('top_k') or json_body.get('top_k') or 10)
     except (TypeError, ValueError):
         return jsonify({"erreur": "top_k invalide"}), 400
 
+    mode = (request.form.get('mode') or json_body.get('mode') or '').strip().lower()
+
     try:
+        from PIL import Image as _PILImage
+
         if 'image' in request.files and request.files['image'].filename:
-            from PIL import Image as _PILImage
             uploaded = request.files['image']
             img = _PILImage.open(uploaded.stream).convert('RGB')
-            payload = mm_search_image(img, top_k, uploaded_name=uploaded.filename)
+            if mode == 'image_to_text':
+                payload = mm_search_image_to_text(img, top_k, uploaded_name=uploaded.filename)
+            else:
+                payload = mm_search_image(img, top_k, uploaded_name=uploaded.filename)
         else:
-            data = request.get_json(silent=True) or request.form
+            data = json_body or request.form
+            filename = (data.get('filename') or '').strip()
             text = (data.get('text') or '').strip()
-            if not text:
-                return jsonify({"erreur": "Fournissez un texte ou une image."}), 400
-            payload = mm_search_text(text, top_k)
+
+            if filename and mode in ('image_to_image', 'image_to_text'):
+                fpath = os.path.join(DOSSIER_FLICKR, filename)
+                if not os.path.isfile(fpath):
+                    return jsonify({"erreur": f"Image introuvable dans Flickr8k: {filename}"}), 400
+                img = _PILImage.open(fpath).convert('RGB')
+                if mode == 'image_to_text':
+                    payload = mm_search_image_to_text(img, top_k, uploaded_name=filename)
+                else:
+                    payload = mm_search_image(img, top_k, uploaded_name=filename)
+            elif text:
+                payload = mm_search_text(text, top_k)
+            else:
+                return jsonify({"erreur": "Fournissez un texte, un nom de fichier ou une image."}), 400
         return jsonify(payload)
     except ValueError as e:
         return jsonify({"erreur": str(e)}), 400

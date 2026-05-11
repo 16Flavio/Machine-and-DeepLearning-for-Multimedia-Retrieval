@@ -52,25 +52,42 @@
     <!--Ajout de texte ou d'image-->
     <div class="container text-center mt-4 mb-5">
       <h2>Recherche Sémantique</h2>
-      
-      <div class="d-flex justify-content-center align-items-center gap-3 mt-4 flex-wrap" id="rechercheContainer">
-          
-          <div id="sectionTexte" class="position-relative w-50" style="min-width: 250px;">
-              <input type="text" id="barreRecherche" class="form-control" placeholder="Entrez une description (ex: Un chien sur la plage)..." autocomplete="off">
-              <ul id="listeAutocompletion" class="list-group position-absolute w-100 d-none text-dark text-start shadow" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
-              </ul>
-          </div>
 
-          <span id="separateurOu" class="fw-bold">OU</span>
+      <div class="d-flex justify-content-center mt-4">
+        <div class="btn-group" role="group" aria-label="Mode de recherche" data-bs-theme="dark">
+          <input type="radio" class="btn-check" name="modeRecherche" id="modeTextToImage" value="text_to_image" autocomplete="off" checked>
+          <label class="btn btn-outline-light fw-bold" for="modeTextToImage">Texte → Images</label>
 
-          <div id="sectionImage">
-              <input type="file" id="uploadImage" class="form-control" accept="image/*">
-          </div>
+          <input type="radio" class="btn-check" name="modeRecherche" id="modeImageToImage" value="image_to_image" autocomplete="off">
+          <label class="btn btn-outline-light fw-bold" for="modeImageToImage">Image → Images</label>
+
+          <input type="radio" class="btn-check" name="modeRecherche" id="modeImageToText" value="image_to_text" autocomplete="off">
+          <label class="btn btn-outline-light fw-bold" for="modeImageToText">Image → Textes</label>
+        </div>
       </div>
 
-      <button id="btnReset" class="btn btn-outline-secondary mt-3 d-none">
-          <i class="bi bi-arrow-counterclockwise"></i> Changer de mode de recherche
-      </button>
+      <div class="d-flex flex-column align-items-center gap-3 mt-4" id="rechercheContainer">
+
+          <div id="sectionTexte" class="position-relative w-50" style="min-width: 250px;">
+              <input type="text" id="barreRecherche" class="form-control" placeholder="Entrez une description (ex: Un chien sur la plage)..." autocomplete="off">
+              <ul id="listeAutocompletion" class="list-group position-absolute w-100 d-none text-dark text-start shadow" style="z-index: 1000; max-height: 240px; overflow-y: auto;">
+              </ul>
+              <div class="form-text text-light small mt-1">Tapez librement, ou choisissez une légende existante depuis la base.</div>
+          </div>
+
+          <div id="sectionImage" class="d-flex justify-content-center align-items-center gap-3 flex-wrap d-none">
+              <div class="position-relative" style="min-width: 280px; width: 360px;">
+                  <input type="text" id="barreRechercheImage" class="form-control" placeholder="Nom d'une image Flickr8k..." autocomplete="off">
+                  <ul id="listeAutocompletionImage" class="list-group position-absolute w-100 d-none text-dark text-start shadow" style="z-index: 1000; max-height: 240px; overflow-y: auto;">
+                  </ul>
+              </div>
+              <span class="fw-bold">OU</span>
+              <div>
+                  <input type="file" id="uploadImage" class="form-control" accept="image/*">
+              </div>
+          </div>
+
+      </div>
 
       <div class="mt-4">
           <img id="apercuImage" src="" alt="Aperçu de votre image" class="img-fluid rounded shadow-lg d-none" style="max-height: 350px;">
@@ -119,63 +136,130 @@
     <script>
       //Partie concernant l'affichage et le changement entre les modes de recherche
       const barreRecherche = document.getElementById('barreRecherche');
+      const listeAutocompletion = document.getElementById('listeAutocompletion');
+      const barreRechercheImage = document.getElementById('barreRechercheImage');
+      const listeAutocompletionImage = document.getElementById('listeAutocompletionImage');
       const uploadImage = document.getElementById('uploadImage');
       const sectionTexte = document.getElementById('sectionTexte');
       const sectionImage = document.getElementById('sectionImage');
-      const separateurOu = document.getElementById('separateurOu');
       const apercuImage = document.getElementById('apercuImage');
-      const btnReset = document.getElementById('btnReset');
+      const modeRadios = document.querySelectorAll('input[name="modeRecherche"]');
 
-      // Information textuelle
-      barreRecherche.addEventListener('input', function() {
-          if (this.value.trim() !== '') {
-              // On cache l'upload d'image et le "OU"
+      function modeActuel() {
+          const r = document.querySelector('input[name="modeRecherche"]:checked');
+          return r ? r.value : 'text_to_image';
+      }
+
+      function appliquerMode() {
+          const mode = modeActuel();
+          barreRecherche.value = '';
+          barreRechercheImage.value = '';
+          uploadImage.value = '';
+          listeAutocompletion.classList.add('d-none');
+          listeAutocompletionImage.classList.add('d-none');
+          apercuImage.src = '';
+          apercuImage.classList.add('d-none');
+
+          if (mode === 'text_to_image') {
+              sectionTexte.classList.remove('d-none');
               sectionImage.classList.add('d-none');
-              separateurOu.classList.add('d-none');
-              // On affiche le bouton de reset
-              btnReset.classList.remove('d-none');
           } else {
-              // Si la barre redevient vide, on réaffiche tout
-              resetAffichage();
+              sectionTexte.classList.add('d-none');
+              sectionImage.classList.remove('d-none');
+          }
+      }
+
+      modeRadios.forEach(r => r.addEventListener('change', appliquerMode));
+      appliquerMode();
+
+      // -------- Autocomplétion : images Flickr depuis la BD --------
+      let imagesFlickr = [];
+      fetch('/api/flickr_images')
+          .then(r => r.json())
+          .then(data => { if (Array.isArray(data)) imagesFlickr = data; })
+          .catch(err => console.error('Erreur chargement /api/flickr_images:', err));
+
+      function rafraichirListeImages(filtre) {
+          listeAutocompletionImage.innerHTML = '';
+          const q = (filtre || '').toLowerCase();
+          if (!q) { listeAutocompletionImage.classList.add('d-none'); return; }
+          const resultats = imagesFlickr.filter(n => n.toLowerCase().includes(q)).slice(0, 30);
+          if (!resultats.length) { listeAutocompletionImage.classList.add('d-none'); return; }
+          listeAutocompletionImage.classList.remove('d-none');
+          resultats.forEach(n => {
+              const li = document.createElement('li');
+              li.className = 'list-group-item list-group-item-action';
+              li.textContent = n;
+              li.onclick = () => {
+                  barreRechercheImage.value = n;
+                  uploadImage.value = '';
+                  listeAutocompletionImage.classList.add('d-none');
+                  apercuImage.src = '/flickr_dataset/' + encodeURIComponent(n);
+                  apercuImage.classList.remove('d-none');
+              };
+              listeAutocompletionImage.appendChild(li);
+          });
+      }
+      barreRechercheImage.addEventListener('input', e => rafraichirListeImages(e.target.value));
+      document.addEventListener('click', e => {
+          if (!barreRechercheImage.contains(e.target) && !listeAutocompletionImage.contains(e.target)) {
+              listeAutocompletionImage.classList.add('d-none');
           }
       });
 
-      // CHargement d'image
+      // -------- Autocomplétion : légendes Flickr depuis la BD (server-side) --------
+      let captionDebounce = null;
+      function rafraichirListeCaptions(filtre) {
+          listeAutocompletion.innerHTML = '';
+          const q = (filtre || '').trim();
+          if (q.length < 2) { listeAutocompletion.classList.add('d-none'); return; }
+          if (captionDebounce) clearTimeout(captionDebounce);
+          captionDebounce = setTimeout(() => {
+              fetch('/api/flickr_captions?q=' + encodeURIComponent(q) + '&limit=20')
+                  .then(r => r.json())
+                  .then(data => {
+                      listeAutocompletion.innerHTML = '';
+                      if (!Array.isArray(data) || !data.length) {
+                          listeAutocompletion.classList.add('d-none');
+                          return;
+                      }
+                      listeAutocompletion.classList.remove('d-none');
+                      data.forEach(cap => {
+                          const li = document.createElement('li');
+                          li.className = 'list-group-item list-group-item-action';
+                          li.textContent = cap;
+                          li.onclick = () => {
+                              barreRecherche.value = cap;
+                              listeAutocompletion.classList.add('d-none');
+                          };
+                          listeAutocompletion.appendChild(li);
+                      });
+                  })
+                  .catch(err => console.error('Erreur /api/flickr_captions:', err));
+          }, 180);
+      }
+      barreRecherche.addEventListener('input', e => rafraichirListeCaptions(e.target.value));
+      document.addEventListener('click', e => {
+          if (!barreRecherche.contains(e.target) && !listeAutocompletion.contains(e.target)) {
+              listeAutocompletion.classList.add('d-none');
+          }
+      });
+
+      // Aperçu d'image (upload local)
       uploadImage.addEventListener('change', function() {
           if (this.files && this.files[0]) {
-              // On cache la barre de texte et le "OU"
-              sectionTexte.classList.add('d-none');
-              separateurOu.classList.add('d-none');
-              btnReset.classList.remove('d-none');
-
-              // On crée un aperçu visuel de l'image chargée
+              barreRechercheImage.value = '';
               const reader = new FileReader();
               reader.onload = function(e) {
                   apercuImage.src = e.target.result;
                   apercuImage.classList.remove('d-none');
               };
               reader.readAsDataURL(this.files[0]);
+          } else {
+              apercuImage.src = '';
+              apercuImage.classList.add('d-none');
           }
       });
-
-      // Bouton changer de mode de recherche
-      btnReset.addEventListener('click', resetAffichage);
-
-      // Fonction qui remet l'interface à zéro
-      function resetAffichage() {
-          // On vide les champs
-          barreRecherche.value = '';
-          uploadImage.value = '';
-          // On cache l'aperçu
-          apercuImage.src = '';
-          apercuImage.classList.add('d-none');
-          // On réaffiche les deux options
-          sectionTexte.classList.remove('d-none');
-          sectionImage.classList.remove('d-none');
-          separateurOu.classList.remove('d-none');
-          // On cache le bouton reset
-          btnReset.classList.add('d-none');
-      }
     const btnLancerRecherche = document.getElementById('btnLancerRecherche');
     const TopInput = document.getElementById('inputTop');
     const msgErreur = document.getElementById('msgErreur');
@@ -186,21 +270,50 @@
     const prInfo = document.getElementById('prInfo');
     let prChart = null;
 
-    function afficherResultats(results) {
+    function escapeHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function afficherResultats(results, kind) {
         gridResultats.innerHTML = '';
-        results.forEach((r, i) => {
-            const col = document.createElement('div');
-            col.className = 'col';
-            col.innerHTML =
-                '<div class="card bg-dark bg-opacity-75 text-white border-0 shadow-sm h-100" data-bs-theme="dark">' +
-                '  <img src="/flickr_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
-                '  <div class="card-body p-2">' +
-                '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
-                '    <div class="small text-light">score: ' + r.score.toFixed(4) + '</div>' +
-                '  </div>' +
-                '</div>';
-            gridResultats.appendChild(col);
-        });
+        if (kind === 'text') {
+            gridResultats.className = 'row row-cols-1 g-3';
+            results.forEach((r, i) => {
+                const col = document.createElement('div');
+                col.className = 'col';
+                col.innerHTML =
+                    '<div class="card bg-dark bg-opacity-75 text-white border-0 shadow-sm" data-bs-theme="dark">' +
+                    '  <div class="card-body p-3">' +
+                    '    <div class="d-flex justify-content-between align-items-start gap-3">' +
+                    '      <div class="flex-grow-1">' +
+                    '        <div class="small fw-bold mb-1">#' + (i + 1) + ' — score: ' + r.score.toFixed(4) + '</div>' +
+                    '        <div class="fs-6">' + escapeHtml(r.caption) + '</div>' +
+                    '        <div class="small text-light mt-1">image source: ' + escapeHtml(r.image) + '</div>' +
+                    '      </div>' +
+                    '      <img src="/flickr_dataset/' + encodeURIComponent(r.image) + '" alt="" style="width:96px;height:96px;object-fit:cover;border-radius:8px;flex-shrink:0;">' +
+                    '    </div>' +
+                    '  </div>' +
+                    '</div>';
+                gridResultats.appendChild(col);
+            });
+        } else {
+            gridResultats.className = 'row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3';
+            results.forEach((r, i) => {
+                const col = document.createElement('div');
+                col.className = 'col';
+                col.innerHTML =
+                    '<div class="card bg-dark bg-opacity-75 text-white border-0 shadow-sm h-100" data-bs-theme="dark">' +
+                    '  <img src="/flickr_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
+                    '  <div class="card-body p-2">' +
+                    '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
+                    '    <div class="small text-light">score: ' + r.score.toFixed(4) + '</div>' +
+                    '  </div>' +
+                    '</div>';
+                gridResultats.appendChild(col);
+            });
+        }
         zoneResultats.classList.remove('d-none');
     }
 
@@ -260,12 +373,19 @@
     }
 
     btnLancerRecherche.addEventListener('click', function() {
+        const mode = modeActuel();
         const texteRecherche = barreRecherche.value.trim();
         const imageChargee = uploadImage.files && uploadImage.files[0];
+        const filenameRecherche = barreRechercheImage.value.trim();
         const topValue = TopInput.value.trim();
 
-        if (texteRecherche === '' && !imageChargee) {
-            msgErreur.textContent = "Veuillez saisir un texte ou sélectionner une image avant de lancer la recherche.";
+        if (mode === 'text_to_image' && texteRecherche === '') {
+            msgErreur.textContent = "Veuillez saisir un texte avant de lancer la recherche.";
+            msgErreur.classList.remove('d-none');
+            return;
+        }
+        if ((mode === 'image_to_image' || mode === 'image_to_text') && !imageChargee && !filenameRecherche) {
+            msgErreur.textContent = "Veuillez sélectionner une image (de la BD ou un upload) avant de lancer la recherche.";
             msgErreur.classList.remove('d-none');
             return;
         }
@@ -280,21 +400,30 @@
         zonePrCurve.classList.add('d-none');
         msgChargement.classList.remove('d-none');
 
-        const titreCurve = imageChargee
-            ? ('CLIP image → image  ·  ' + imageChargee.name)
-            : ('CLIP texte → image  ·  "' + texteRecherche + '"');
+        const nomImageAffiche = imageChargee ? imageChargee.name : filenameRecherche;
+        let titreCurve;
+        if (mode === 'image_to_image') titreCurve = 'CLIP image → image  ·  ' + nomImageAffiche;
+        else if (mode === 'image_to_text') titreCurve = 'CLIP image → texte  ·  ' + nomImageAffiche;
+        else titreCurve = 'CLIP texte → image  ·  "' + texteRecherche + '"';
 
         let fetchOpts;
-        if (imageChargee) {
+        if (mode === 'text_to_image') {
+            fetchOpts = {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: texteRecherche, top_k: parseInt(topValue, 10), mode: mode}),
+            };
+        } else if (imageChargee) {
             const fd = new FormData();
             fd.append('image', imageChargee);
             fd.append('top_k', topValue);
+            fd.append('mode', mode);
             fetchOpts = {method: 'POST', body: fd};
         } else {
             fetchOpts = {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({text: texteRecherche, top_k: parseInt(topValue, 10)}),
+                body: JSON.stringify({filename: filenameRecherche, top_k: parseInt(topValue, 10), mode: mode}),
             };
         }
 
@@ -307,7 +436,7 @@
                     msgErreur.classList.remove('d-none');
                     return;
                 }
-                afficherResultats(data.results || []);
+                afficherResultats(data.results || [], data.kind);
                 afficherPrCurve(data.pr_curve, titreCurve);
             })
             .catch(err => {

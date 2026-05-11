@@ -68,3 +68,24 @@ def encode_text(text: str) -> np.ndarray:
     inputs = processor(text=[text], return_tensors="pt", padding=True, truncation=True).to(device)
     out = _unwrap(model.get_text_features(**inputs)).detach().cpu().numpy().astype(np.float32)
     return _normalize(out)[0]
+
+
+@torch.no_grad()
+def encode_texts(texts: Iterable[str], batch_size: int = 256) -> np.ndarray:
+    model, processor, device = _ensure_loaded()
+    feats: List[np.ndarray] = []
+    batch: List[str] = []
+    for t in texts:
+        batch.append(t if isinstance(t, str) else str(t))
+        if len(batch) == batch_size:
+            inputs = processor(text=batch, return_tensors="pt", padding=True, truncation=True).to(device)
+            out = _unwrap(model.get_text_features(**inputs))
+            feats.append(out.detach().cpu().numpy().astype(np.float32))
+            batch = []
+    if batch:
+        inputs = processor(text=batch, return_tensors="pt", padding=True, truncation=True).to(device)
+        out = _unwrap(model.get_text_features(**inputs))
+        feats.append(out.detach().cpu().numpy().astype(np.float32))
+    if not feats:
+        return np.zeros((0, 512), dtype=np.float32)
+    return _normalize(np.concatenate(feats, axis=0))

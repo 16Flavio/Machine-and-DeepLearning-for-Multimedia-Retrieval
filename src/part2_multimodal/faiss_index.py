@@ -16,8 +16,11 @@ CAPTIONS_PATH = ROOT / "data" / "raw" / "Flickr8k_dataset" / "captions.txt"
 
 GALLERY_PATH = FEATURES_DIR / "CLIP_flickr_gallery.npy"
 FILENAMES_PATH = FEATURES_DIR / "CLIP_flickr_filenames.json"
+TEXT_GALLERY_PATH = FEATURES_DIR / "CLIP_flickr_text_gallery.npy"
+TEXT_META_PATH = FEATURES_DIR / "CLIP_flickr_captions.json"
 
 _state = {"index": None, "filenames": None, "gallery": None}
+_text_state = {"index": None, "captions": None, "images": None, "gallery": None}
 _captions_state: dict = {}
 
 
@@ -50,6 +53,42 @@ def _top_k(query_vec: np.ndarray, k: int) -> List[dict]:
     scores, idx = index.search(q, k)
     return [
         {"filename": filenames[int(i)], "score": float(s)}
+        for s, i in zip(scores[0], idx[0])
+    ]
+
+
+def _ensure_text_index():
+    if _text_state["index"] is not None:
+        return _text_state["index"], _text_state["captions"], _text_state["images"]
+    if not TEXT_GALLERY_PATH.exists() or not TEXT_META_PATH.exists():
+        raise FileNotFoundError(
+            f"CLIP text gallery not found. Run src/part2_multimodal/extract_clip_text.py to build it. "
+            f"Expected: {TEXT_GALLERY_PATH} and {TEXT_META_PATH}"
+        )
+    gallery = np.load(TEXT_GALLERY_PATH).astype(np.float32)
+    if not gallery.flags.c_contiguous:
+        gallery = np.ascontiguousarray(gallery)
+    meta = json.loads(TEXT_META_PATH.read_text(encoding="utf-8"))
+    captions = meta["captions"]
+    images = meta["images"]
+    index = faiss.IndexFlatIP(gallery.shape[1])
+    index.add(gallery)
+    _text_state["index"] = index
+    _text_state["captions"] = captions
+    _text_state["images"] = images
+    _text_state["gallery"] = gallery
+    return index, captions, images
+
+
+def _top_k_text(query_vec: np.ndarray, k: int) -> List[dict]:
+    index, captions, images = _ensure_text_index()
+    q = query_vec.reshape(1, -1).astype(np.float32)
+    if not q.flags.c_contiguous:
+        q = np.ascontiguousarray(q)
+    k = max(1, min(int(k), index.ntotal))
+    scores, idx = index.search(q, k)
+    return [
+        {"caption": captions[int(i)], "image": images[int(i)], "score": float(s)}
         for s, i in zip(scores[0], idx[0])
     ]
 
@@ -140,6 +179,38 @@ def _pr_curve_topk(topk_filenames: List[str], relevant_set: Set[str]) -> dict:
     }
 
 
+def list_flickr_filenames() -> List[str]:
+    _, filenames = _ensure_index()
+    return list(filenames)
+
+
+_unique_captions_cache: List[str] = []
+
+
+def list_flickr_captions(query: str = "", limit: int = 20) -> List[str]:
+    global _unique_captions_cache
+    if not _unique_captions_cache:
+        _, captions, _ = _ensure_text_index()
+        seen = set()
+        unique = []
+        for c in captions:
+            if c not in seen:
+                seen.add(c)
+                unique.append(c)
+        _unique_captions_cache = unique
+    tokens = [t for t in (query or "").lower().split() if t]
+    if not tokens:
+        return _unique_captions_cache[:limit]
+    out = []
+    for c in _unique_captions_cache:
+        cl = c.lower()
+        if all(t in cl for t in tokens):
+            out.append(c)
+            if len(out) >= limit:
+                break
+    return out
+
+
 def search_text(text: str, top_k: int) -> dict:
     text = (text or "").strip()
     if not text:
@@ -147,7 +218,7 @@ def search_text(text: str, top_k: int) -> dict:
     results = _top_k(encode_text(text), top_k)
     relevant = _relevant_for_text(text)
     pr = _pr_curve_topk([r["filename"] for r in results], relevant)
-    return {"results": results, "pr_curve": pr}
+    return {"results": results, "pr_curve": pr, "kind": "image"}
 
 
 def search_image(pil_image: Image.Image, top_k: int, uploaded_name: str | None = None) -> dict:
@@ -160,4 +231,38 @@ def search_image(pil_image: Image.Image, top_k: int, uploaded_name: str | None =
     else:
         relevant = set()
     pr = _pr_curve_topk([r["filename"] for r in results], relevant)
-    return {"results": results, "pr_curve": pr}
+    return {"results": results, "pr_curve": pr, "kind": "image"}
+
+
+def search_image_to_text(pil_image: Image.Image, top_k: int, uploaded_name: str | None = None) -> dict:
+    if pil_image is None:
+        raise ValueError("Aucune image fournie.")
+    index, captions, images = _ensure_text_index()
+    q = encode_image(pil_image).reshape(1, -1).astype(np.float32)
+    if not q.flags.c_contiguous:
+        q = np.ascontiguousarray(q)
+    k = max(1, min(int(top_k), index.ntotal))
+    scores, idx = index.search(q, k)
+    ranked = [int(i) for i in idx[0]]
+    results = [
+        {"caption": captions[i], "image": images[i], "score": float(s)}
+        for s, i in zip(scores[0], ranked)
+    ]
+
+    if uploaded_name and uploaded_name in set(images):
+        relevant_idx = {i for i, name in enumerate(images) if name == uploaded_name}
+        rel = np.array([1 if j in relevant_idx else 0 for j in ranked], dtype=np.int32)
+        cum_rel = np.cumsum(rel)
+        ranks = np.arange(1, len(rel) + 1, dtype=np.float32)
+        precision = cum_rel / ranks
+        recall = cum_rel / len(relevant_idx)
+        pr = {
+            "recall": [0.0] + recall.tolist(),
+            "precision": [1.0] + precision.tolist(),
+            "average_precision": float(precision.mean()),
+            "total_relevant": int(len(relevant_idx)),
+        }
+    else:
+        pr = {"recall": [], "precision": [], "average_precision": 0.0, "total_relevant": 0}
+
+    return {"results": results, "pr_curve": pr, "kind": "text"}

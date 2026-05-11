@@ -245,88 +245,69 @@
         const cosinusLabel = document.querySelector('label[for="btncheck1_2"]');
         const chiCarreLabel = document.querySelector('label[for="btncheck1_3"]');
         const bhattacharyyaLabel = document.querySelector('label[for="btncheck1_4"]');
-        // Descripteurs : multi-select libre — la fusion des classements est faite
-        // côté serveur via Reciprocal Rank Fusion. Aucune exclusivité mutuelle.
-        euclidienneCheck.addEventListener('change', function() {
-            if (this.checked) {
-                cosinusCheck.checked = false;
-                chiCarreCheck.checked = false;
-                bhattacharyyaCheck.checked = false;
-                cosinusCheck.disabled = true;
-                chiCarreCheck.disabled = true;
-                bhattacharyyaCheck.disabled = true;
-                cosinusLabel.classList.add('bouton-grise');
-                chiCarreLabel.classList.add('bouton-grise');
-                bhattacharyyaLabel.classList.add('bouton-grise');
+        // Compatibilité descripteur ↔ métrique :
+        //   Groupe HIST  : descripteurs {ORB, SIFT}                                       ↔ métriques {Chi², Bhattacharyya}
+        //   Groupe DENSE : descripteurs {HOG, ConvNext Classifier, ConvNext Metric, ViT}  ↔ métriques {Euclidienne, Cosinus}
+        // Cocher un élément d'un groupe grise tout l'autre groupe ; les métriques
+        // restent par ailleurs mutuellement exclusives (cliquer sur une autre la remplace).
+        const histDescChecks   = [orbCheck, siftCheck];
+        const histDescLabels   = [orbLabel, siftLabel];
+        const denseDescChecks  = [hogCheck, ResCheck, vitCheck, metricsLearningCheck];
+        const denseDescLabels  = [hogLabel, ResLabel, vitLabel, metricsLearningLabel];
+        const histMetricChecks = [chiCarreCheck, bhattacharyyaCheck];
+        const histMetricLabels = [chiCarreLabel, bhattacharyyaLabel];
+        const denseMetricChecks = [euclidienneCheck, cosinusCheck];
+        const denseMetricLabels = [euclidienneLabel, cosinusLabel];
+        const allMetricChecks  = [...denseMetricChecks, ...histMetricChecks];
+        const allMetricLabels  = [...denseMetricLabels, ...histMetricLabels];
+
+        function setItem(check, label, disabled) {
+            if (disabled) {
+                check.checked = false;
+                check.disabled = true;
+                label.classList.add('bouton-grise');
             } else {
-                cosinusCheck.disabled = false;
-                chiCarreCheck.disabled = false;
-                bhattacharyyaCheck.disabled = false;
-                cosinusLabel.classList.remove('bouton-grise');
-                chiCarreLabel.classList.remove('bouton-grise');
-                bhattacharyyaLabel.classList.remove('bouton-grise');
+                check.disabled = false;
+                label.classList.remove('bouton-grise');
             }
-          })
-        chiCarreCheck.addEventListener('change', function() {
-            if (this.checked) {
-                cosinusCheck.checked = false;
-                euclidienneCheck.checked = false;
-                bhattacharyyaCheck.checked = false;
-                cosinusCheck.disabled = true;
-                euclidienneCheck.disabled = true;
-                bhattacharyyaCheck.disabled = true;
-                cosinusLabel.classList.add('bouton-grise');
-                euclidienneLabel.classList.add('bouton-grise');
-                bhattacharyyaLabel.classList.add('bouton-grise');
-            } else {
-                cosinusCheck.disabled = false;
-                euclidienneCheck.disabled = false;
-                bhattacharyyaCheck.disabled = false;
-                cosinusLabel.classList.remove('bouton-grise');
-                euclidienneLabel.classList.remove('bouton-grise');
-                bhattacharyyaLabel.classList.remove('bouton-grise');
-            }
-          })
-        cosinusCheck.addEventListener('change', function() {
-            if (this.checked) {
-                chiCarreCheck.checked = false;
-                euclidienneCheck.checked = false;
-                bhattacharyyaCheck.checked = false;
-                chiCarreCheck.disabled = true;
-                euclidienneCheck.disabled = true;
-                bhattacharyyaCheck.disabled = true;
-                chiCarreLabel.classList.add('bouton-grise');
-                euclidienneLabel.classList.add('bouton-grise');
-                bhattacharyyaLabel.classList.add('bouton-grise');
-            } else {
-                chiCarreCheck.disabled = false;
-                euclidienneCheck.disabled = false;
-                bhattacharyyaCheck.disabled = false;
-                chiCarreLabel.classList.remove('bouton-grise');
-                euclidienneLabel.classList.remove('bouton-grise');
-                bhattacharyyaLabel.classList.remove('bouton-grise');
-            }
-          })
-        bhattacharyyaCheck.addEventListener('change', function() {
-            if (this.checked) {
-                chiCarreCheck.checked = false;
-                euclidienneCheck.checked = false;
-                cosinusCheck.checked = false;
-                chiCarreCheck.disabled = true;
-                euclidienneCheck.disabled = true;
-                cosinusCheck.disabled = true;
-                chiCarreLabel.classList.add('bouton-grise');
-                euclidienneLabel.classList.add('bouton-grise');
-                cosinusLabel.classList.add('bouton-grise');
-            } else {
-                chiCarreCheck.disabled = false;
-                euclidienneCheck.disabled = false;
-                cosinusCheck.disabled = false;
-                chiCarreLabel.classList.remove('bouton-grise');
-                euclidienneLabel.classList.remove('bouton-grise');
-                cosinusLabel.classList.remove('bouton-grise');
-            }
-          })
+        }
+
+        // Quand un utilisateur clique une métrique, on garde uniquement celle-là.
+        allMetricChecks.forEach(c => {
+            c.addEventListener('change', function() {
+                if (this.checked) {
+                    allMetricChecks.forEach(other => { if (other !== this) other.checked = false; });
+                }
+                recomputeCompat();
+            });
+        });
+
+        // Quand un descripteur change, on relance la cohérence.
+        [...histDescChecks, ...denseDescChecks].forEach(c => c.addEventListener('change', recomputeCompat));
+
+        function recomputeCompat() {
+            const histDescOn   = histDescChecks.some(c => c.checked);
+            const denseDescOn  = denseDescChecks.some(c => c.checked);
+            const histMetOn    = histMetricChecks.some(c => c.checked);
+            const denseMetOn   = denseMetricChecks.some(c => c.checked);
+
+            const lockHist  = denseDescOn || denseMetOn;
+            const lockDense = histDescOn  || histMetOn;
+
+            histDescChecks.forEach((c, i)   => setItem(c, histDescLabels[i],   lockHist));
+            denseDescChecks.forEach((c, i)  => setItem(c, denseDescLabels[i],  lockDense));
+
+            // Une métrique reste cliquable si son groupe n'est pas verrouillé
+            // ET qu'aucune autre métrique n'est déjà cochée.
+            const pickedMetric = allMetricChecks.find(c => c.checked) || null;
+            allMetricChecks.forEach((c, i) => {
+                const groupLocked = (denseMetricChecks.includes(c) && lockDense)
+                                 || (histMetricChecks.includes(c)  && lockHist);
+                const mutex = pickedMetric && pickedMetric !== c;
+                setItem(c, allMetricLabels[i], groupLocked || mutex);
+            });
+        }
+        recomputeCompat();
 
         // Partie concernant la barre de recherche d'image et l'upload d'image
           let imagesConnues = [];

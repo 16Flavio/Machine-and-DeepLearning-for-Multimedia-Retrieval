@@ -1,0 +1,19 @@
+services:
+  mir:
+    build: .
+    image: mir-app:latest
+    container_name: mir
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data:ro
+      - ./models:/app/models:ro
+      - ./results:/app/results
+      - hf-cache:/root/.cache/huggingface
+    environment:
+      - HF_HUB_DISABLE_TELEMETRY=1
+      - TRANSFORMERS_OFFLINE=0
+
+volumes:
+  hf-cache:

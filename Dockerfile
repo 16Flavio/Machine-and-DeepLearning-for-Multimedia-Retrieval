@@ -21,9 +21,9 @@ RUN pip install --no-cache-dir uv \
 COPY app.py ./
 COPY src ./src
 COPY Site_Internet ./Site_Internet
-COPY data ./data
-COPY models ./models
-COPY results ./results
+
+# data/, models/, results/ sont fournis par des volumes au runtime
+# (cf. docker-compose.yml) — ne pas les embarquer dans l'image.
 
 EXPOSE 5000
 CMD ["python", "app.py"]
