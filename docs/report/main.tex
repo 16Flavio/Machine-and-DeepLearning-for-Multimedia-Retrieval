@@ -13,6 +13,7 @@
 
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{multirow}
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{float}
@@ -43,7 +44,7 @@
 %Madame/Monsieur Prenom \textsc{Nom} (co-promoteur) \\
 %Madame/Monsieur Prenom \textsc{Nom} (rapporteur)} 
 % The date (or academic year)
-\umonsDate{Année académique 2026-2026}
+\umonsDate{Année académique 2025-2026}
 
 \begin{document}
 
@@ -63,7 +64,7 @@
 
 La croissance exponentielle des contenus multimédias disponibles en ligne (images, vidéos, textes) a fait de la recherche d'information multimédia (\textit{Multimedia Information Retrieval}, MIR) un domaine central de l'intelligence artificielle moderne. Qu'il s'agisse de retrouver une photographie dans une collection personnelle, d'identifier un produit à partir d'une image, ou encore d'interroger une base de données à l'aide d'une description textuelle, les moteurs de recherche multimédias sont devenus des outils incontournables. Leur efficacité repose sur la qualité des descripteurs utilisés pour représenter le contenu, ainsi que sur les mesures de similarité employées pour comparer ces représentations.
 
-Historiquement, les approches classiques s'appuyaient sur des descripteurs \textit{hand-crafted} tels que les histogrammes de couleurs, SIFT ou HOG. L'avènement de l'apprentissage profond a profondément transformé le domaine en permettant l'extraction automatique de caractéristiques sémantiquement riches via des réseaux de neurones convolutifs (CNN) et, plus récemment, via des architectures de type \textit{Vision Transformer} (ViT). Par ailleurs, des modèles multimodaux comme CLIP~\cite{radford2021learningtransferablevisualmodels} ont ouvert la voie à une recherche véritablement \textit{cross-modale}, où l'image et le texte partagent un même espace de représentation.
+Historiquement, les approches classiques s'appuyaient sur des descripteurs \textit{hand-crafted} tels que les histogrammes de couleurs, SIFT ou HOG. L'avènement de l'apprentissage profond a profondément transformé le domaine en permettant l'extraction automatique de caractéristiques sémantiquement riches via des réseaux de neurones convolutifs (CNN) et, plus récemment, via des architectures de type \textit{Vision Transformer} (ViT). Par ailleurs, des modèles multimodaux comme CLIP~\cite{radford2021clip} ont ouvert la voie à une recherche véritablement \textit{cross-modale}, où l'image et le texte partagent un même espace de représentation.
 
 \subsection{Objectifs du projet}
 
@@ -199,7 +200,7 @@ complémentaires ont été retenus~:
     un histogramme d'orientations de gradient calculé sur des cellules
     $16\times 16$ regroupées en blocs $2\times 2$ (normalisation
     L2-Hys, $9$ orientations). Le descripteur final est un vecteur dense
-    de $\sim 7\,000$ dimensions.
+    de $8\,100$ dimensions.
 
     \item \textbf{SIFT}~(\textit{Scale-Invariant Feature Transform}) et
     \textbf{ORB}~(\textit{Oriented FAST and Rotated BRIEF}) - descripteurs
@@ -402,7 +403,7 @@ moteur final.
 \toprule
 Descripteur & Dim. & Indexation~(s) & $\text{mAP}@50$ & $\text{mAP}@100$ & $\text{mP}@50$ \\
 \midrule
-HOG (dense)        & $\sim 7\,056$ & $30.8$  & $0.76\%$ & $0.40\%$ & $2.00\%$ \\
+HOG (dense)        & $8\,100$ & $30.8$  & $0.76\%$ & $0.40\%$ & $2.00\%$ \\
 SIFT (matching)    & --            & --      & $4.36\%$ & $2.27\%$ & $6.80\%$ \\
 ORB (matching)     & --            & --      & $4.75\%$ & $2.45\%$ & $7.87\%$ \\
 SIFT + BoVW($K=256$) & $256$       & $\sim 60$ & \multicolumn{3}{c}{utilisé dans l'application web} \\
@@ -501,7 +502,7 @@ $14$ requêtes sur $15$), à l'exception remarquable de la requête $R_9$
 dégradation localisée est imputable à la sous-représentation et à
 l'apparence atypique du modèle dans le corpus (silhouette de monospace
 plus proche d'un Opel Vivaro fourgon que des autres berlines de la
-classe). Hors $R_9$, le $\text{mAP}@50$ remonterait à $99.0\%$.
+classe). Hors $R_9$, le $\text{mAP}@50$ remonterait à $99.7\%$.
 
 \begin{table}[H]
 \centering
@@ -530,7 +531,13 @@ $R_{15}$ (Ford Focus)      & $0.49$ & $0.74$ & $0.98$ & $0.73$ & $0.997$ & $0.99
 \bottomrule
 \end{tabular}
 \caption{Table~4 - Métriques par requête pour le meilleur modèle global
-(ConvNeXt-Base, mode classifier, $d=2048$).}
+(ConvNeXt-Base, mode classifier, $d=2048$). Le $\text{mAP}@50$ moyen
+($95.3\%$) est calculé ici par le notebook d'analyse par requête, dont
+la convention de normalisation de l'$AP@k$ diffère légèrement de celle
+du script de grille agrégé ayant produit la Table~3 ($93.96\%$)~; les
+valeurs sont cohérentes au sein de chaque table et cet écart de
+$\sim 1.3$ point n'affecte ni le classement des descripteurs ni les
+conclusions.}
 \label{tab:per_query}
 \end{table}
 
@@ -543,18 +550,23 @@ Aucun descripteur ne domine simultanément sur tous les critères.
 ($\text{mAP}@50 = 93.96\%$), tandis que \textit{ConvNeXt metric} et
 \textit{DINOv2 metric} sont marginalement supérieurs au-delà du top-50,
 indiquant un classement plus stable en queue. À taille de descripteur
-égale ($d=2048$, $78$~MB), le mode \textit{metric} est aussi le plus
-rapide à la recherche et bénéficie d'un meilleur \textit{mR-Precision}
-($0.86$ vs $0.79$ pour ConvNeXt). Le podium retenu pour la Table~3
-est donc~:
+égale ($d=2048$, $78$~MB), le mode \textit{metric} est en outre près de
+deux fois plus rapide à la recherche ($0.13$~s/img contre $0.21$~s pour
+le \textit{classifier}) et conserve un $\text{mAP}@100$ légèrement
+supérieur ($93.2\%$ vs $93.0\%$). Le meilleur \textit{mR-Precision}
+toutes configurations confondues revient quant à lui à
+\textit{DINOv2 metric} $d=1024$ ($0.86$, contre $0.79$ pour le meilleur
+ConvNeXt). Le podium retenu pour la Table~3 est donc~:
 \begin{enumerate}
     \item \textbf{ConvNeXt-Base classifier ($d=2048$)} -- meilleur
     $\text{mAP}@50$ ($93.96\%$). \emph{Descripteur CNN}.
     \item \textbf{ConvNeXt-Base metric ($d=2048$)} -- meilleur
-    \textit{mR-Precision} parmi les CNN, recherche rapide. \emph{Descripteur CNN}.
+    $\text{mAP}@100$ parmi les CNN et recherche la plus rapide.
+    \emph{Descripteur CNN}.
     \item \textbf{DINOv2 ViT-B/14 metric ($d=1024$)} -- meilleur
-    descripteur de la famille \emph{Vision Transformer}, à empreinte
-    mémoire moitié moindre. \emph{Descripteur ViT}.
+    descripteur de la famille \emph{Vision Transformer} et meilleur
+    \textit{mR-Precision} global, à empreinte mémoire moitié moindre.
+    \emph{Descripteur ViT}.
 \end{enumerate}
 Cette sélection satisfait la \textbf{Note~1} de l'énoncé qui exige
 \emph{au moins deux descripteurs profonds dont un CNN et un ViT parmi
@@ -597,6 +609,487 @@ ce qui valide la robustesse des descripteurs profonds appris.
 %% Marie
 \section{Moteur de recherche multi modal}
 \label{sec:part2}
+\subsection{Introduction et motivation}
+ 
+La recherche d'images par le contenu (\textit{Content-Based Image Retrieval}, CBIR)
+constitue un défi central en récupération d'information multimédia.
+Les approches classiques reposaient sur des descripteurs visuels bas niveau
+(histogrammes de couleur, SIFT, etc.) et ne permettaient pas d'interroger
+une collection d'images à l'aide d'une requête en langage naturel.
+ 
+Le modèle CLIP (\textit{Contrastive Language–Image Pre-training}), publié par
+OpenAI en 2021~\cite{radford2021clip}, introduit une représentation commune
+aux images et aux textes dans un espace vectoriel partagé de dimension fixe.
+Cette propriété rend possible, sans ré-entraînement, deux modes de recherche :
+ 
+\begin{itemize}
+    \item \textbf{Texte $\rightarrow$ Image} : retrouver les images les plus proches
+          d'une requête rédigée en langage naturel ;
+    \item \textbf{Image $\rightarrow$ Texte} : retrouver les légendes (ou images)
+          les plus similaires à une image requête.
+\end{itemize}
+ 
+Notre travail applique CLIP sur le dataset \textbf{Flickr8k}
+(8\,091 images, 5 légendes par image) et utilise la bibliothèque
+\textbf{FAISS} pour l'indexation et la recherche par similarité à grande échelle.
+ 
+% ------------------------------------------------------------
+\subsection{Le modèle CLIP}
+ 
+\subsubsection{Principe d'apprentissage contrastif}
+ 
+CLIP est entraîné par apprentissage contrastif \footnote{méthode d'apprentissage automatique auto-supervisé qui apprend à un modèle à distinguer des données en les comparant, plutôt qu'en utilisant des étiquettes manuelles ~\cite{ultralytics_contrastive}} sur un corpus de
+400 millions de paires (image, texte) collectées sur Internet.
+L'objectif est d'apprendre simultanément deux encodeurs,
+$f_{\mathcal{I}}$ pour les images et $f_{\mathcal{T}}$ pour les textes,
+de sorte que les représentations d'une paire sémantiquement cohérente
+soient proches, et que les représentations de paires non correspondantes
+soient éloignées dans l'espace vectoriel partagé.
+ 
+Formellement, pour un batch de $N$ paires $\{(I_i, T_i)\}_{i=1}^{N}$,
+la fonction de perte est une entropie croisée symétrique sur la matrice
+de similarités cosinus entre toutes les combinaisons image-texte :
+ 
+\begin{equation}
+    \mathcal{L} = -\frac{1}{2N}\sum_{i=1}^{N}
+    \left[
+        \log \frac{\exp\!\left(\langle f_{\mathcal{I}}(I_i),\,
+        f_{\mathcal{T}}(T_i)\rangle / \tau\right)}
+        {\sum_{j=1}^{N}\exp\!\left(\langle f_{\mathcal{I}}(I_i),\,
+        f_{\mathcal{T}}(T_j)\rangle / \tau\right)}
+        +
+        \log \frac{\exp\!\left(\langle f_{\mathcal{T}}(T_i),\,
+        f_{\mathcal{I}}(I_i)\rangle / \tau\right)}
+        {\sum_{j=1}^{N}\exp\!\left(\langle f_{\mathcal{T}}(T_i),\,
+        f_{\mathcal{I}}(I_j)\rangle / \tau\right)}
+    \right]
+\end{equation}
+ 
+où $\langle \cdot, \cdot \rangle$ désigne le produit scalaire (équivalent
+à la similarité cosinus sur des vecteurs normalisés) et $\tau$ est un paramètre
+de température appris.
+ 
+\subsubsection{Architecture employée : ViT-B/32}
+ 
+Nous utilisons la variante \texttt{openai/clip-vit-base-patch32} disponible
+via la bibliothèque \texttt{transformers} de HuggingFace.
+L'encodeur visuel est un \textit{Vision Transformer} (ViT-B/32) :
+l'image est découpée en patches de $32 \times 32$ pixels, convertis en tokens
+et traités par un transformeur de 12 couches.
+L'encodeur textuel est également un transformeur à 12 couches prenant en entrée
+une séquence de tokens BPE (\textit{Byte-Pair Encoding}).
+Les deux encodeurs projettent leurs représentations dans un espace commun de
+dimension $d = 512$.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/Clip.png}
+    \caption{Architecture du modèle CLIP}
+    \label{fig:clip_architecture}
+\end{figure}
+ 
+% ------------------------------------------------------------
+\subsection{Pipeline d'encodage}
+ 
+\subsubsection{Encodage des images}
+ 
+Toutes les images de la galerie Flickr8k sont encodées en amont (\textit{offline})
+par la fonction \texttt{encode\_images} du module \texttt{clip\_encoder.py}.
+Le traitement se fait par batchs afin d'optimiser l'utilisation du GPU.
+Pour chaque batch, les images sont pré-traitées par le \texttt{CLIPProcessor}
+(redimensionnement à $224 \times 224$, normalisation par les statistiques
+ImageNet), puis les caractéristiques sont extraites via
+\texttt{model.get\_image\_features()}.
+ 
+Les vecteurs obtenus sont ensuite \textbf{normalisés L2} :
+ 
+\begin{equation}
+    \hat{e}_i = \frac{e_i}{\|e_i\|_2 + \epsilon}, \qquad \epsilon = 10^{-12}
+\end{equation}
+ 
+Cette normalisation est indispensable car elle permet de substituer le
+produit scalaire à la similarité cosinus, ce qu'exploite directement
+l'index FAISS \texttt{IndexFlatIP}.
+ 
+Les embeddings de la galerie ($N \times 512$ flottants 32 bits) sont
+sauvegardés sur disque au format NumPy afin de ne pas recalculer ces
+représentations à chaque requête :
+ 
+\begin{verbatim}
+np.save("CLIP_flickr_gallery.npy", feats)   # shape : (8091, 512)
+\end{verbatim}
+ 
+\subsubsection{Encodage des textes}
+ 
+L'encodage d'une requête textuelle s'effectue à la volée par la fonction
+\texttt{encode\_text} :
+ 
+\begin{enumerate}
+    \item Le texte est tokenisé par le \texttt{CLIPProcessor} (troncature à
+          77 tokens) ;
+    \item Les features sont extraites via \texttt{model.get\_text\_features()} ;
+    \item Le vecteur est normalisé L2.
+\end{enumerate}
+ 
+L'ensemble des 40\,455 légendes Flickr8k est également pré-encodé
+pour l'évaluation de la tâche \textit{Image $\rightarrow$ Texte}.
+ 
+% ------------------------------------------------------------
+\subsection{Indexation avec FAISS}
+ 
+\subsubsection{Choix de l'index}
+ 
+FAISS (\textit{Facebook AI Similarity Search})~\cite{johnson2019faiss}
+est une bibliothèque optimisée pour la recherche du plus proche voisin
+dans des espaces vectoriels de grande dimension.
+ 
+Nous utilisons un \texttt{IndexFlatIP} (produit scalaire exact, \textit{Inner Product}),
+qui effectue une recherche exhaustive sur l'ensemble de la galerie.
+Ce choix est justifié par la taille modeste de Flickr8k (8\,091 images) :
+la recherche exacte reste rapide (de l'ordre de quelques millisecondes
+par requête) et évite toute perte de précision liée aux méthodes
+d'approximation (IVF, HNSW, PQ, etc.).
+ 
+\subsubsection{Construction et interrogation de l'index}
+ 
+Deux index sont construits :
+ 
+\begin{itemize}
+    \item \textbf{Image index} : contient les $N = 8\,091$ embeddings d'images,
+          utilisé pour la tâche \textit{Texte $\rightarrow$ Image} ;
+    \item \textbf{Texte index} : contient les $M = 40\,455$ embeddings de légendes,
+          utilisé pour la tâche \textit{Image $\rightarrow$ Texte}.
+\end{itemize}
+ 
+Pour une requête $q$ (vecteur normalisé), la recherche des $k$ plus proches voisins
+revient à calculer :
+ 
+\begin{equation}
+    \text{top-}k\bigl\{\langle q,\, e_i \rangle \mid i = 1, \ldots, N\bigr\}
+\end{equation}
+ 
+La logique d'interrogation est encapsulée dans le module \texttt{faiss\_index.py},
+qui expose les fonctions \texttt{search\_text} et \texttt{search\_image}.
+Ces fonctions retournent les $k$ résultats triés par score décroissant
+ainsi que les données nécessaires au tracé de la courbe
+Précision/Rappel.
+ 
+% ------------------------------------------------------------
+\subsection{Protocole d'évaluation}
+ 
+\subsubsection{Métriques}
+ 
+Nous évaluons les deux modalités de recherche à l'aide des métriques
+standard en récupération d'information :
+ 
+\begin{itemize}
+    \item \textbf{Recall@K} (R@K) : proportion de requêtes pour lesquelles
+          au moins un élément pertinent figure dans les $K$ premiers résultats.
+          Pour la tâche \textit{Texte $\rightarrow$ Image}, l'ensemble pertinent
+          d'une légende est réduit à la seule image source (R@K $\in \{0,1\}$
+          par requête).
+          Pour la tâche \textit{Image $\rightarrow$ Texte}, les 5 légendes
+          associées à l'image sont considérées comme pertinentes.
+ 
+    \item \textbf{Précision@K} (P@K) : fraction des $K$ premiers résultats
+          qui sont pertinents.
+ 
+    \item \textbf{Average Precision} (AP) et \textbf{mAP} :
+          l'AP d'une requête est la moyenne des valeurs de précision
+          aux rangs où un élément pertinent est retrouvé :
+          \begin{equation}
+              \text{AP} = \frac{1}{|\mathcal{R}|}\sum_{k=1}^{K}
+              P@k \cdot \mathbb{1}[\text{résultat}_k \in \mathcal{R}]
+          \end{equation}
+          La \textit{Mean Average Precision} (mAP) est la moyenne des AP
+          sur l'ensemble des requêtes.
+\end{itemize}
+ 
+\subsubsection{Protocole expérimental}
+ 
+Les évaluations sont conduites sur un sous-ensemble de 1\,000 requêtes
+tirées aléatoirement (graine fixée à 42 pour la reproductibilité).
+Pour chaque requête, les $K = 10$ images (resp. légendes) les plus proches
+sont récupérées depuis l'index FAISS correspondant.
+ 
+
+
+
+\subsection{Analyse des résultats}
+ 
+\subsubsection{Résultats quantitatifs}
+ 
+Le tableau~\ref{tab:clip_results} récapitule les performances
+obtenues par CLIP ViT-B/32 sur les 1\,000 requêtes de test.
+
+\begin{table}[h]
+\centering
+\caption{Résultats d'évaluation sur Flickr8k — CLIP ViT-B/32}
+\label{tab:clip_results}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Tâche} & \textbf{R@1} & \textbf{R@5} & \textbf{R@10} & \textbf{mAP} \\
+\hline
+Texte $\rightarrow$ Image & 0.2790 & 0.5410 & 0.6560 & 0.3902 \\
+Image $\rightarrow$ Texte & 0.4860 & 0.7180 & 0.7990 & 0.3021 \\
+\hline
+\end{tabular}
+\end{table}
+
+ 
+\subsubsection{Interprétation des métriques}
+ 
+\paragraph{Tâche Texte $\rightarrow$ Image.}
+Un R@1 de 0.279 signifie que dans 27,9\,\% des cas, l'image correcte
+apparaît en première position parmi les résultats retournés.
+Ce chiffre monte à 54,1\,\% pour R@5 et à 65,6\,\% pour R@10, ce qui
+témoigne d'une capacité de rappel satisfaisante du modèle à mesure que
+la fenêtre de résultats s'élargit.
+Ces performances, obtenues de manière \textit{zéro-shot} (sans aucun
+entraînement spécifique sur Flickr8k), sont particulièrement
+remarquables et reflètent la puissance de généralisation acquise
+par CLIP lors de son pré-entraînement sur 400 millions de paires
+image-texte.
+La mAP de 0.390 indique par ailleurs que les éléments pertinents
+tendent à être concentrés en haut du classement plutôt que dispersés.
+ 
+\paragraph{Tâche Image $\rightarrow$ Texte.}
+La tâche \textit{Image $\rightarrow$ Texte} présente un profil inverse :
+le R@1 est nettement plus élevé (0.486 contre 0.279) tandis que
+la mAP est plus faible (0.302 contre 0.390).
+Cela s'explique par la nature du problème : chaque image est associée à
+5 légendes pertinentes dans le ground-truth, ce qui augmente mécaniquement
+la probabilité qu'au moins une légende correcte figure parmi les premiers
+résultats (R@1 élevé).
+En revanche, retrouver l'ensemble des 5 légendes dans un classement serré
+est plus difficile, ce qui pénalise la mAP.
+Le R@10 de 0.799 confirme qu'en élargissant la fenêtre à dix résultats,
+le système retrouve au moins une légende pertinente pour 80\,\% des images
+requêtes.
+ 
+\paragraph{Asymétrie entre les deux modalités.}
+L'asymétrie observée entre les deux tâches est cohérente avec la
+littérature sur les modèles CLIP~\cite{radford2021clip} : l'encodage
+textuel tend à produire des représentations plus diffuses dans l'espace
+vectoriel (car une même image peut être décrite par des formulations
+très variées), tandis que l'encodage visuel est plus contraint et stable.
+Cela favorise la précision de premier rang en mode
+\textit{Image $\rightarrow$ Texte}.
+ 
+\subsubsection{Analyse de la courbe Précision-Rappel}
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\linewidth]{figures/multimodal_courbe_RP.png}
+    \caption{Courbe de rappel et précision pour Texte $\rightarrow$ Image}
+    \label{fig:rappel_precision_text_to_image}
+\end{figure}
+La courbe Précision-Rappel obtenue pour la tâche
+\textit{Texte $\rightarrow$ Image} (Figure~\ref{fig:rappel_precision_text_to_image}) présente
+la forme décroissante caractéristique des systèmes de recherche
+d'information : la précision est maximale (environ 0.30) pour les
+rappels faibles, correspondant aux cas où le modèle est le plus
+confiant, et décroît régulièrement à mesure que le seuil de sélection
+s'abaisse pour inclure des résultats moins pertinents.
+ 
+L'absence d'un plateau de précision élevée en début de courbe indique
+que même les résultats de premier rang ne sont pas toujours corrects,
+ce qui est cohérent avec le R@1 de 0.279.
+La pente régulière et l'absence de rupture abrupte suggèrent en revanche
+que le modèle ordonne les résultats de façon cohérente et graduelle,
+sans effondrement brutal de la pertinence.
+
+
+\subsection{Comparaison avec OpenCLIP (LAION-2B)}
+
+ 
+Afin d'évaluer l'influence des données d'entraînement sur les
+performances en récupération d'information, nous avons comparé
+CLIP ViT-B/32 d'OpenAI avec son homologue \textbf{OpenCLIP ViT-B/32}
+entraîné sur le jeu de données LAION-2B~\cite{schuhmann2022laion}.
+ 
+OpenCLIP est une réimplémentation ouverte du modèle CLIP, développée
+par LAION (\textit{Large-scale Artificial Intelligence Open Network}).
+La variante retenue ici \newline (\texttt{laion/CLIP-ViT-B-32-laion2B-s34B-b79K})
+partage exactement la même architecture ViT-B/32 que le modèle OpenAI,
+mais a été entraînée sur \textbf{2 milliards de paires} image-texte
+(LAION-2B), soit cinq fois plus que le corpus d'OpenAI (~400 millions).
+Cette comparaison à architecture égale permet d'isoler l'effet du
+volume et de la diversité des données d'entraînement.
+ 
+\subsubsection{Protocole de comparaison}
+ 
+Les deux modèles sont évalués dans des conditions strictement identiques :
+ 
+\begin{itemize}
+    \item Même dataset : Flickr8k (8\,091 images, 40\,455 légendes) ;
+    \item Même protocole d'encodage : normalisation L2 des embeddings,
+          index FAISS \texttt{IndexFlatIP} ;
+    \item Même protocole d'évaluation : 1\,000 requêtes aléatoires
+          (graine 42), $K = 10$, métriques R@1, R@5, R@10 et mAP
+          pour les deux modalités.
+\end{itemize}
+ 
+Les fonctions d'encodage et d'évaluation ont été généralisées pour
+accepter n'importe quelle combinaison de modèle/processeur/index,
+garantissant que les différences observées ne sont imputables qu'au
+modèle lui-même.
+ 
+\subsubsection{Résultats comparatifs}
+ 
+\begin{table}[h]
+\centering
+\caption{Comparaison CLIP ViT-B/32 (OpenAI) vs OpenCLIP ViT-B/32 (LAION-2B) sur Flickr8k}
+\label{tab:openclip_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+\hline
+\multirow{2}{*}{\textbf{Modèle}} &
+\multicolumn{4}{c}{\textbf{Texte $\rightarrow$ Image}} &
+\multicolumn{4}{c}{\textbf{Image $\rightarrow$ Texte}} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+ & R@1 & R@5 & R@10 & mAP & R@1 & R@5 & P@5 & mAP \\
+\hline
+CLIP ViT-B/32 (OpenAI)        & 0.2790 & 0.5410 & 0.6560 & 0.3902
+                               & 0.4860 & 0.7180 & 0.3152 & 0.3021 \\
+OpenCLIP ViT-B/32 (LAION-2B)  & 0.388     & 0.640     & 0.735     & 0.4953
+                               & 0.544     & 0.778     & 0.3878     & 0.3798     \\
+\hline
+\end{tabular}
+}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\linewidth]{figures/pr_comparaison.png}
+    \caption{Comparaison de Clip Open AI et Open Clip LAION sur le dataset}
+    \label{fig:comparaison_clip_AI}
+\end{figure}
+ 
+\subsubsection{Discussion des résultats comparatifs}
+ 
+\begin{table}[h]
+\centering
+\caption{Comparaison CLIP ViT-B/32 (OpenAI) vs OpenCLIP ViT-B/32 (LAION-2B) sur Flickr8k}
+\label{tab:openclip_comparison_final}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+\hline
+\multirow{2}{*}{\textbf{Modèle}} &
+\multicolumn{4}{c}{\textbf{Texte $\rightarrow$ Image}} &
+\multicolumn{4}{c}{\textbf{Image $\rightarrow$ Texte}} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+ & R@1 & R@5 & R@10 & mAP & R@1 & R@5 & P@5 & mAP \\
+\hline
+CLIP ViT-B/32 (OpenAI)       & 0.2790 & 0.5410 & 0.6560 & 0.3902
+                              & 0.4860 & 0.7180 & 0.3152 & 0.3021 \\
+OpenCLIP ViT-B/32 (LAION-2B) & 0.3880 & 0.6400 & 0.7350 & 0.4953
+                              & 0.5440 & 0.7780 & 0.3878 & 0.3798 \\
+\hline
+$\Delta$ (points)            & +10.9  & +9.9   & +7.9   & +10.5
+                              & +5.8   & +6.0   & +7.3   & +7.8  \\
+\hline
+\end{tabular}%
+}
+\end{table}
+ 
+Les résultats présentés dans le tableau~\ref{tab:openclip_comparison_final}
+confirment la supériorité d'OpenCLIP LAION-2B sur l'ensemble des métriques
+et des deux modalités de recherche.
+ 
+\paragraph{Tâche Texte $\rightarrow$ Image.}
+C'est sur cette tâche que les gains sont les plus marqués.
+Le R@1 progresse de 0.279 à 0.388, soit une amélioration de
+\textbf{+10.9 points de pourcentage} (+39\,\% en valeur relative).
+Cette progression se confirme sur R@5 (+9.9 pts) et R@10 (+7.9 pts),
+mais avec une amplitude légèrement décroissante : l'apport d'OpenCLIP
+est donc davantage concentré sur les premières positions du classement,
+là où la précision est la plus critique pour l'utilisateur.
+La mAP passe de 0.390 à 0.495, ce qui signifie qu'OpenCLIP place
+les résultats pertinents de manière plus systématiquement haute
+dans le classement, et non uniquement ponctuellement.
+ 
+\paragraph{Tâche Image $\rightarrow$ Texte.}
+Les gains sont plus modestes mais restent constants sur toutes
+les métriques : +5.8 pts en R@1, +6.0 pts en R@5 et +7.8 pts en mAP.
+La P@5 passe de 0.315 à 0.388, indiquant qu'en moyenne, davantage
+de légendes pertinentes figurent parmi les cinq premières retournées.
+Ce différentiel plus faible par rapport à la tâche
+\textit{Texte $\rightarrow$ Image} suggère que l'enrichissement
+en données profite davantage à la compréhension sémantique du texte
+qu'à la discrimination visuelle, ce qui est cohérent avec la plus
+grande variabilité linguistique du corpus LAION-2B.
+ 
+\paragraph{Interprétation globale.}
+À architecture strictement identique (ViT-B/32, espace d'embedding
+de dimension 512), ces résultats démontrent que \textbf{le volume
+et la diversité des données d'entraînement} constituent un levier
+déterminant pour la qualité des représentations multimodales.
+En passant de ~400 millions de paires (OpenAI) à 2 milliards (LAION-2B),
+OpenCLIP apprend un espace d'embedding mieux structuré,
+où les correspondances image-texte sont plus finement séparées.
+Néanmoins, les deux modèles opèrent en mode \textit{zéro-shot} sur
+Flickr8k : un fine-tuning même léger sur ce dataset dépasserait
+vraisemblablement les deux baselines de manière significative.
+ 
+% ------------------------------------------------------------
+\subsubsection{Analyse qualitative}
+ 
+
+Pour les requêtes génériques impliquant des sujets fréquents
+dans les deux corpus (animaux, activités sportives, paysages),
+les deux modèles produisent des résultats visuellement cohérents
+et très similaires entre eux.
+ 
+La différence se manifeste principalement sur les \textbf{requêtes
+composées ou à attributs multiples} telles que
+\textit{``two children playing in the snow''} : OpenCLIP retourne
+des images satisfaisant davantage de contraintes simultanément
+(présence d'enfants, contexte neigeux, interaction entre sujets),
+là où le modèle OpenAI peut parfois privilégier l'un des éléments
+sémantiques au détriment des autres.
+Cela reflète la richesse des descriptions textuelles dans LAION-2B,
+qui a exposé le modèle à un vocabulaire relationnel et
+compositionnnel plus étendu.
+ 
+Pour les requêtes visuellement ambiguës ou abstraites,
+aucun des deux modèles ne produit de résultats entièrement
+satisfaisants, ce qui souligne la limite commune des approches
+d'encodage global : un vecteur unique de 512 dimensions
+ne peut capturer intégralement la richesse sémantique d'une scène.
+ 
+% ------------------------------------------------------------
+\subsection{Conclusion de la partie multimodale}
+ 
+Ce travail a permis de construire un moteur de recherche multimodal
+complet sur le dataset Flickr8k, en exploitant les représentations
+partagées de CLIP pour traiter les deux sens de recherche
+(\textit{Texte $\rightarrow$ Image} et \textit{Image $\rightarrow$ Texte}).
+ 
+Plusieurs enseignements peuvent être dégagés :
+ 
+\begin{itemize}
+    \item \textbf{La pré-formation contrastive est efficace en
+          zéro-shot.} Sans aucune supervision sur Flickr8k, CLIP
+          ViT-B/32 atteint un R@10 de 0.656 en \textit{Texte $\rightarrow$ Image}
+          et de 0.799 en \textit{Image $\rightarrow$ Texte}, ce qui
+          constitue une base solide pour un moteur de recherche
+          applicatif.
+ 
+    \item \textbf{Le volume des données d'entraînement est un facteur clé.}
+          La comparaison avec OpenCLIP LAION-2B, à architecture égale,
+          montre des gains allant jusqu'à +10.9 points sur R@1, confirmant
+          l'importance de la diversité et du volume des paires
+          image-texte pour apprendre un espace d'embedding bien structuré.
+ 
+    \item \textbf{L'indexation FAISS garantit l'efficacité à l'inférence.}
+          En séparant la phase d'encodage (hors-ligne, coûteuse) de
+          la phase de recherche (en ligne, quasi-instantanée),
+          le système est prêt pour un déploiement à l'échelle
+          de collections photographiques de taille réelle.
+\end{itemize}
+ 
+
+
 
 
 \newpage
@@ -605,6 +1098,143 @@ ce qui valide la robustesse des descripteurs profonds appris.
 
 %% Marie
 \subsection{Interface Web}
+Afin de créer notre interface web, nous avons écris deux fichiers .html nommés comme suit : 
+\begin{itemize}
+    \item index.html gère la page du moteur de recherche multimodal. 
+    \item index2.html gère la page du moteur de recherche d'image uni-modal à deux niveaux. 
+\end{itemize}
+\subsubsection{Manuel d'utilisation}
+\subsubsection*{Moteur de recherche multimodal}
+La page d'accueil se présente comme suit (Figure \ref{fig:page_Accueil_index}). 
+Dans celle-ci, nous pouvons choisir d'entrer un texte, et d'avoir des images correspondantes à ce texte, d'entrer une image et d'avoir des images correspondantes ou alors d'entrer une image et d'avoir une description textuelle correspondante. \newline 
+
+Lorsque nous souhaitons passer d'une image à une image ou à un texte, nous avons soit le choix d'entrer une image de la base de données d'entraînement, à gauche, ou d'entrer notre propre image, à droite. Pour entrer une image personnalisée, il suffit de cliquer sur "\textit{Choisir un fichier}", et la page ouvre directement l'explorateur de fichier afin de pouvoir sélectionner notre image. \newline 
+Après avoir entrer une image, nous pouvons la visualiser afin de savoir quelle image a bien été rentrée dans le site. \newline 
+
+Finalement, le résultat est généré après avoir cliqué sur \textit{Lancer la recherche}. \newline 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Autres/multimodal_page_accueil.png}
+    \caption{Page d’accueil de la recherche mutlimodal}
+    \label{fig:page_Accueil_index}
+\end{figure}
+
+Voici un exemple pour la recherche Texte $\rightarrow$ Images : \newline 
+
+Nous avons tester notre modèle sur deux phrases : "A dog running down the beach" et "Un chien qui court sur la plage". Dans les deux cas, on cherche à retrouver 5 images semblabes. \newline 
+Pour la phrase en anglais, nous avons obtenu le résultat suivant (Figures \ref{fig:exemple1.1} et \ref{fig:exemple1.2}). 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/Exemple1_1.png}
+    \caption{Résultats obtenus pour la phrase en anglais }
+    \label{fig:exemple1.1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/exemple1.2.png}
+    \caption{Courbe de précision et de rappel pour la phrase en anglais}
+    \label{fig:exemple1.2}
+\end{figure}
+Pour la phrase en français, nous avons obtenu le résultat qui suit (Figures \ref{fig:exemple2.1} et \ref{fig:exemple2.2}).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/Exemple2_1.png}
+    \caption{Résultats obtenus pour la phrase en français}
+    \label{fig:exemple2.1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/Exemple2_2.png}
+    \caption{Espace dédié à la courbe de précision et de rappel pour la phrase en français}
+    \label{fig:exemple2.2}
+\end{figure}
+Nous pouvons voir que sur la Figure \ref{fig:exemple2.2}, aucune courbe de précision et rappel ne s'affiche car la phrase, en français, ne fait pas partie des phrases d'entraînement du modèle anglais. Tandis que la même phrase en anglais fait partie du corpus d'entraînement. \newline 
+
+Voici un exemple pour la recherche Image $\rightarrow$ Images et Images $\rightarrow$ Textes: \newline 
+
+Si je choisis d'insérer une image, la visualisation de celle-ci est directement disponible en dessous du fichier sélectionné (Figure \ref{fig:exemple3.1}), et il suffit d'écrire le nombre d'images et de textes à associer avant de lancer la recherche. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/exemple3.1.png}
+    \caption{Enter Caption}
+    \label{fig:exemple3.1}
+\end{figure}
+
+Nous pouvons voir le résultat de la recherche Image $\rightarrow$ Images sur la Figure \ref{fig:image_to_image}. Pour cette méthode, aucune courbe de rappel et de précision est disponible puisque les images téléchargées sont "inconnues" au corpus initial d'entraînement. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/result_image_to_image_example.png}
+    \caption{Résultats obtenus pour la recherche d'images $\rightarrow$ images}
+    \label{fig:image_to_image}
+\end{figure}
+
+Le résultat de la recherche Image $\rightarrow$ Texte est visible sur la Figure \ref{fig:image_to_texts}. Pour cette méthode, aucune courbe de rappel et de précision est disponible.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/solution_image_to_text_example.png}
+    \caption{Résultats obtenus pour la recherche d'images $\rightarrow$ textes}
+    \label{fig:image_to_texts}
+\end{figure}
+
+\subsubsection*{Moteur de recherche d'image uni modal à deux niveaux}
+Lorsque nous transvasons sur la page de recherche unimodale, nous pouvons observer la page suivante (Figures \ref{fig:unimodalacceuil1} et \ref{fig:unimodalacceuil2}) : 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/unimodal_accueil1.png}
+    \caption{Page de recherche d'image uni modal (1)}
+    \label{fig:unimodalacceuil1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/unimodal_accueil_2.png}
+    \caption{Page de recherche d'image uni modal (2)}
+    \label{fig:unimodalacceuil2}
+\end{figure}
+
+Dans cette page, nous pouvons soit rechercher une image de la base de données, soit insérer notre propre image. Ensuite, il est demandé de choisir les descripteurs parmi la liste des 6 descripteurs proposés, sachant qu'on peut sélectionner plusieurs descripteurs, et au maximum tous les descripteurs. Par après, il faut sélectionner une seule métrique. Lorsqu'une métrique est sélectionnée, les autres ne sont plus sélectionnables. Ensuite, on indique le top d'élément que l'on souhaite récupérer. Finalement, on peut choisir si l'on souhaite visualiser les descripteurs (en cliquant sur le bouton \textit{"Visualisation 3D (UMap)"}) ou non. \newline 
+
+Nous avons représenté un exemple ci-dessous (Figures \ref{fig:ex_uni_1} à \ref{fig:ex_uni_5}), où nous avons pris une image de la base de donnée, avec comme descripteur ORB, associé à la métrique Cosinus, avec un top 14 et la visualisation des métriques disponible. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/exemple_uni_1.1.png}
+    \caption{Paramètres à entrer}
+    \label{fig:ex_uni_1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/exemple_uni_1.2.png}
+    \caption{Suite des paramètres à entrer }
+    \label{fig:ex_uni_2}
+\end{figure}
+
+Les résultats sont les suivants : 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/exemple_uni_1.3.png}
+    \caption{Résultats de la recherche}
+    \label{fig:ex_uni_3}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/exemple_uni_1.4.png}
+    \caption{Courbe de rappel et précision sur les résultats}
+    \label{fig:ex_uni_4}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Autres/exemple_uni_1.5.png}
+    \caption{Visualisation du descripteur ORB}
+    \label{fig:ex_uni_5}
+\end{figure}
+
+Lors de la visualisation en 3D, nous pouvons choisir un des descripteurs afin de voir sur la map interactive les différentes classes. \newline 
+La visualisation des descripteurs en 3D permet de visualiser comment l'information est ordonnée dans l'espace par le descripteur choisi. Le fait d'avoir un cluster pour chaque classe montre que le modèle a appris quelque chose. \newline
+
+Comme le modèle de recherche multimodal, lorsque nous insérons une image qui n'appartient pas au set d'entraînement, nous n'obtenons pas de résultats pour la courbe de rappel et de précision. 
 
 %% Flavio
 \subsection{Lien entre les modèles et l'interface}
@@ -701,7 +1331,7 @@ récupérées via \texttt{/cars\_dataset/<name>}.
 
 \paragraph{Cache mémoire et chargement paresseux.}
 Pour absorber le coût de chargement des modèles profonds
-($\approx 350$~MB pour ConvNeXt et $90$~MB pour DINOv2), chaque module
+($\approx 340$~MB pour ConvNeXt et $\approx 330$~MB pour DINOv2), chaque module
 maintient un dictionnaire \texttt{\_cache} ou \texttt{\_state} chargé
 \emph{à la première requête} et conservé en mémoire pour toute la durée
 de vie du processus~:
@@ -794,7 +1424,7 @@ place~:
     \texttt{DESCRIPTOR\_TAGS} dans \texttt{search.py}~;
 
     \item \textbf{Protection contre le \textit{path traversal}}~: les
-    routes \texttt{/cars\_dataset/<name>} et
+    routes \texttt{/cars\_dataset/<name>} et \newline
     \texttt{/flickr\_dataset/<name>} utilisent \texttt{send\_from\_directory}
     qui résout les chemins relativement à un dossier ancré et rejette
     tout chemin hors arborescence (\texttt{../..} etc.)~;
@@ -859,7 +1489,7 @@ compacts ($\sim 5$~MB pour la galerie complète) sans perte sensible.
 
 En \textbf{Partie~II}, le moteur multimodal sur \textit{Flickr8K}
 exploite l'espace latent partagé de CLIP pour offrir des recherches
-\textit{texte $\to$ image} et \textit{image $\to$ image} indexées par
+\textit{texte $\to$ image} et \textit{image $\to$ texte} indexées par
 FAISS. La rapidité de la recherche (de l'ordre de la milliseconde par
 requête) et la qualité sémantique des résultats valident l'intérêt des
 modèles contrastifs pré-entraînés à grande échelle pour la recherche
