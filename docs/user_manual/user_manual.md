@@ -127,12 +127,23 @@ Six descripteurs peuvent être combinés librement :
 
 #### Étape 3 — Choix de la mesure de similarité
 
-| Bouton | Adapté pour |
-|---|---|
-| **Euclidienne** | Embeddings profonds, descripteurs L2-normalisés |
-| **Cosinus** | Embeddings profonds (équivaut à la corrélation) |
-| **Chi carré** | Histogrammes BoVW, HOG |
-| **Bhattacharyya** | Histogrammes BoVW, HOG |
+| Bouton | Adapté pour | ORB / SIFT | HOG | Embeddings profonds |
+|---|---|:--:|:--:|:--:|
+| **Euclidienne** | tous les descripteurs | ✅ | ✅ | ✅ |
+| **Cosinus** | tous (équivaut à la corrélation) | ✅ | ✅ | ✅ |
+| **Chi carré** | histogrammes / distributions | ✅ | ⚠️ | ❌ |
+| **Bhattacharyya** | histogrammes / distributions | ✅ | ⚠️ | ❌ |
+
+> **À propos des métriques.** χ² et Bhattacharyya sont conçues pour
+> comparer des *distributions* (bins positifs). Elles sont idéales pour
+> les histogrammes BoVW d'ORB et de SIFT, acceptables pour HOG (dense et
+> positif, mais pas une vraie distribution), mais **non pertinentes pour
+> les embeddings profonds** : ces vecteurs contiennent des composantes
+> négatives, et le moteur doit en prendre la valeur absolue pour
+> appliquer la formule — ce qui détruit l'information de signe et produit
+> un classement sans fondement sémantique. Pour ConvNeXt et DINOv2,
+> privilégiez **Cosinus** (ou Euclidienne). Les quatre métriques restent
+> sélectionnables pour tout descripteur, à des fins de comparaison.
 
 #### Étape 4 — Profondeur de la recherche (Top-K)
 
@@ -146,8 +157,16 @@ millisecondes (jusqu'à quelques secondes pour une image téléversée
 nécessitant l'inférence d'un modèle profond), trois zones se
 remplissent :
 
-1. **Galerie de résultats** : vignettes triées par similarité
-   décroissante avec le score de similarité affiché.
+1. **Galerie de résultats** : vignettes triées par pertinence
+   décroissante, avec le score affiché sous chaque image. Ce score
+   dépend du mode de recherche :
+   - **un seul descripteur** → le score est la **similarité** du
+     descripteur (`1.0` = match parfait, valeurs décroissantes ensuite) ;
+   - **plusieurs descripteurs** → le score est celui de la fusion
+     *Reciprocal Rank Fusion* (RRF, c=60). C'est un score de
+     classement : il ne vaut jamais 1 et plafonne à `n/(c+1)` pour
+     `n` descripteurs (p. ex. ≈ 0,0164 pour un seul, ≈ 0,0328 pour
+     deux). Seul l'**ordre** des résultats est alors significatif.
 2. **Courbe Précision/Rappel** : tracée avec Plotly, accompagnée de
    la valeur d'*Average Precision* (AP) pour cette requête.
 3. **Indicateurs** : nombre d'images pertinentes dans la galerie,
@@ -250,9 +269,15 @@ Toutes les routes de recherche renvoient :
     "precision":  [1.0, 1.0, 1.0,  "..."],
     "average_precision": 0.94,
     "total_relevant": 162
-  }
+  },
+  "score_type": "similarity"
 }
 ```
+
+Le champ `score_type` (recherche unimodale) précise la nature du
+`score` de chaque résultat : `"similarity"` (un seul descripteur,
+`1.0` = match parfait) ou `"rrf"` (plusieurs descripteurs, score de
+fusion par rang).
 
 ### 6.6 Récupérer une image servie
 

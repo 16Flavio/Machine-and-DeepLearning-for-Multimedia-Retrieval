@@ -396,8 +396,11 @@
             const prInfo = document.getElementById('prInfo');
             let prChart = null;
 
-            function afficherResultats(results) {
+            function afficherResultats(results, scoreType) {
                 gridResultats.innerHTML = '';
+                // En mono-descripteur le score est une similarité (1 = identique) ;
+                // en multi-descripteurs c'est un score de fusion par rang (RRF).
+                const scoreLabel = scoreType === 'rrf' ? 'fusion RRF' : 'similarité';
                 results.forEach((r, i) => {
                     const col = document.createElement('div');
                     col.className = 'col';
@@ -406,7 +409,7 @@
                         '  <img src="/cars_dataset/' + encodeURIComponent(r.filename) + '" class="card-img-top" style="height:160px;object-fit:cover;">' +
                         '  <div class="card-body p-2">' +
                         '    <div class="small fw-bold text-truncate">#' + (i + 1) + ' ' + r.filename + '</div>' +
-                        '    <div class="small text-light">score: ' + r.score.toFixed(4) + '</div>' +
+                        '    <div class="small text-light">' + scoreLabel + ': ' + r.score.toFixed(4) + '</div>' +
                         '  </div>' +
                         '</div>';
                     gridResultats.appendChild(col);
@@ -529,7 +532,7 @@
                         msgErreur.classList.remove('d-none');
                         return;
                     }
-                    afficherResultats(data.results || []);
+                    afficherResultats(data.results || [], data.score_type);
                     afficherPrCurve(data.pr_curve, descripteurLabel, metrique);
                 })
                 .catch(err => {

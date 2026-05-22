@@ -121,6 +121,17 @@ def _rank_vector(order: np.ndarray, n: int) -> np.ndarray:
     return rank
 
 
+def _to_similarity(dist: np.ndarray, metric: str) -> np.ndarray:
+    """Convertit une distance en score de similarité lisible (1 = identique)."""
+    if metric == "Cosinus":
+        return 1.0 - dist
+    if metric == "Bhattacharyya":
+        # exp(-d) = coefficient de Bhattacharyya, dans ]0, 1].
+        return np.exp(-dist)
+    # Euclidienne, Chi carré : distances non bornées -> similarité dans ]0, 1].
+    return 1.0 / (1.0 + dist)
+
+
 def _run_multi(q_vecs_by_tag: dict, metric: str, top_k: int, query_label_by_tag: dict):
     tags = list(q_vecs_by_tag.keys())
     first_tag = tags[0]
@@ -128,27 +139,39 @@ def _run_multi(q_vecs_by_tag: dict, metric: str, top_k: int, query_label_by_tag:
     _, _, first_g_lab, _ = _load(first_tag)
     n = len(first_g_lab)
 
-    fused_score = np.zeros(n, dtype=np.float64)
-    for tag in tags:
-        gallery, _, _, _ = _load(tag)
-        dists = _distances(q_vecs_by_tag[tag], gallery, metric)
+    if len(tags) == 1:
+        # Recherche mono-descripteur : le score affiché est la similarité
+        # réelle du descripteur (1 = match parfait), bien plus lisible que
+        # le score RRF (qui plafonne à 1/(RRF_CONST+1)).
+        gallery, _, _, _ = _load(first_tag)
+        dists = _distances(q_vecs_by_tag[first_tag], gallery, metric)
+        ranking_score = _to_similarity(dists, metric)
         order = np.argsort(dists)
-        rank = _rank_vector(order, n)
-        fused_score += 1.0 / (RRF_CONST + rank + 1)
+        score_type = "similarity"
+    else:
+        # Recherche multi-descripteurs : fusion par rang (RRF). Le score est
+        # alors un score de classement, et non une similarité.
+        ranking_score = np.zeros(n, dtype=np.float64)
+        for tag in tags:
+            gallery, _, _, _ = _load(tag)
+            dists = _distances(q_vecs_by_tag[tag], gallery, metric)
+            rank = _rank_vector(np.argsort(dists), n)
+            ranking_score += 1.0 / (RRF_CONST + rank + 1)
+        order = np.argsort(-ranking_score)
+        score_type = "rrf"
 
-    fused_order = np.argsort(-fused_score)
     k = max(1, min(int(top_k), n))
-    top_idx = fused_order[:k]
+    top_idx = order[:k]
 
     files = _gallery_filenames()
-    results = [{"filename": files[i], "score": float(fused_score[i])} for i in top_idx]
+    results = [{"filename": files[i], "score": float(ranking_score[i])} for i in top_idx]
 
     q_label = query_label_by_tag.get(first_tag)
     if q_label is not None:
         pr = _pr_curve_topk(first_g_lab[top_idx], q_label, first_g_lab)
     else:
         pr = {"recall": [], "precision": [], "average_precision": 0.0}
-    return results, pr
+    return results, pr, score_type
 
 
 def _coerce_descriptors(descriptors) -> list:
@@ -186,13 +209,14 @@ def search(filename: str, descriptors, metric: str, top_k: int) -> dict:
         q_vecs[tag] = q_vec
         q_labels[tag] = q_label
 
-    results, pr = _run_multi(q_vecs, metric, top_k, q_labels)
+    results, pr, score_type = _run_multi(q_vecs, metric, top_k, q_labels)
     first_tag = DESCRIPTOR_TAGS[descriptors[0]]
     return {
         "results": results,
         "pr_curve": pr,
         "query_label": str(q_labels[first_tag]),
         "descriptors": descriptors,
+        "score_type": score_type,
     }
 
 
@@ -208,12 +232,13 @@ def search_uploaded(image, descriptors, metric: str, top_k: int, query_label: st
         q_vecs[tag] = extract(d, image)
         q_labels[tag] = _normalize_query_label(query_label, tag) if query_label else None
 
-    results, pr = _run_multi(q_vecs, metric, top_k, q_labels)
+    results, pr, score_type = _run_multi(q_vecs, metric, top_k, q_labels)
     return {
         "results": results,
         "pr_curve": pr,
         "query_label": query_label or "",
         "descriptors": descriptors,
+        "score_type": score_type,
     }
 
 

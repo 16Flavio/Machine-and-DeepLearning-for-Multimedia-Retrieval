@@ -74,7 +74,7 @@ Ce projet, réalisé dans le cadre du cours \textit{Machine and Deep Learning fo
     \item \textbf{Partie I - Moteur de recherche unimodal~:} développement d'un moteur d'indexation et de recherche d'images sur la base \textit{Cars} (10\,000 images réparties en 10 marques et 96 marques+modèles), à partir de descripteurs variés incluant au moins un descripteur CNN et un descripteur ViT. Plusieurs mesures de similarité sont comparées, et les performances sont évaluées à l'aide des métriques usuelles (Precision, Recall, AP, mAP, R-Precision).
 
     \item \textbf{Partie II - Moteur de recherche multimodal~:}
-    mise en place d'un moteur \textit{text-to-image} et \textit{image-to-text} sur la base \textit{Flickr8K}, en exploitant le modèle CLIP pour projeter les images et les textes dans un espace latent commun. L'indexation repose sur FAISS afin d'assurer une recherche efficace des plus proches voisins. Un second modèle contrastif (BLIP/OpenCLIP) est également évalué à titre comparatif.
+    mise en place d'un moteur \textit{text-to-image} et \textit{image-to-text} sur la base \textit{Flickr8K}, en exploitant le modèle CLIP pour projeter les images et les textes dans un espace latent commun. L'indexation repose sur FAISS afin d'assurer une recherche efficace des plus proches voisins. Un second modèle contrastif (OpenCLIP) est également évalué à titre comparatif.
 
     \item \textbf{Partie III - Déploiement cloud~:}
     encapsulation de l'application dans une image Docker et mise à disposition via une interface web Flask sous forme de service SaaS. Cette partie inclut également une réduction de la dimensionnalité des descripteurs ainsi qu'une analyse de la sécurité du site.
@@ -85,7 +85,7 @@ Ce projet, réalisé dans le cadre du cours \textit{Machine and Deep Learning fo
 La suite du rapport est organisée comme suit. La Section~\ref{sec:part1} présente le moteur de recherche unimodal, les descripteurs utilisés et les résultats expérimentaux obtenus sur la base \textit{Cars}. La Section~\ref{sec:part2} détaille l'approche multimodale fondée sur CLIP et son évaluation sur \textit{Flickr8K}. La Section~\ref{sec:part3} décrit le déploiement de l'application dans un environnement cloud, incluant l'interface web, la réduction de dimensionnalité et les aspects de cybersécurité. Enfin, la Section~\ref{sec:conclusion} conclut le rapport et propose quelques pistes d'amélioration.
 
 \newpage
-\section{Moteur de recherche d'images uni modal à deux niveaux}
+\section{Moteur de recherche d'images unimodal à deux niveaux}
 \label{sec:part1}
 
 \subsection{Position du problème}
@@ -204,16 +204,70 @@ complémentaires ont été retenus~:
 
     \item \textbf{SIFT}~(\textit{Scale-Invariant Feature Transform}) et
     \textbf{ORB}~(\textit{Oriented FAST and Rotated BRIEF}) - descripteurs
-    \emph{locaux} basés points-clés. Pour produire un vecteur de taille
-    fixe et indexable, nous adoptons l'approche \textit{Bag of Visual
-    Words}~(BoVW)~: un vocabulaire de $K=256$ mots visuels est appris par
-    \texttt{MiniBatchKMeans} sur un échantillon de $200\,000$ descripteurs
-    issus de la galerie, puis chaque image est encodée par l'histogramme
-    L1-normalisé des occurrences des mots. ORB produit des descripteurs
-    binaires sur $32$ octets, tandis que SIFT produit des descripteurs
-    flottants de dimension $128$~; tous deux sont projetés dans le même
-    espace BoVW de dimension $K$.
+    \emph{locaux} basés points-clés. SIFT produit des descripteurs
+    flottants de dimension $128$, ORB des descripteurs binaires de
+    $32$~octets~; comme ils ne fournissent pas un vecteur unique de
+    taille fixe à l'échelle de l'image, ils sont agrégés via le modèle
+    \textit{Bag of Visual Words} (BoVW) détaillé ci-dessous.
 \end{itemize}
+
+\paragraph{Le modèle \textit{Bag of Visual Words}.}
+Contrairement à HOG, qui produit d'emblée un vecteur de taille fixe,
+SIFT et ORB détectent un \emph{nombre variable} de points-clés par
+image (de quelques dizaines à plusieurs centaines selon le contenu),
+chacun décrit par son propre vecteur local. Une image est donc
+représentée par un \emph{ensemble} de descripteurs de cardinalité
+variable, que l'on ne peut ni comparer directement par une distance
+vectorielle, ni indexer efficacement. Le modèle \textit{Bag of Visual
+Words} (BoVW) lève cet obstacle en transposant aux images l'approche
+\textit{bag-of-words} de la recherche documentaire~: de même qu'un texte
+y est résumé par l'histogramme des occurrences de ses mots sur un
+vocabulaire fixe, une image est résumée par l'histogramme de ses
+\emph{mots visuels}.
+
+La construction se fait en deux temps. \emph{(i)~Apprentissage du
+vocabulaire}~: un large échantillon de descripteurs locaux
+($200\,000$ ici) extraits de la galerie est partitionné par
+\texttt{MiniBatchKMeans} en $K=256$ groupes~; chaque centroïde définit
+un \emph{mot visuel}, c'est-à-dire un motif local prototypique (coin,
+jonction de contours, fragment de texture) récurrent dans le corpus.
+\emph{(ii)~Encodage}~: pour une image donnée, chacun de ses descripteurs
+locaux est assigné au mot visuel le plus proche, et l'on compte les
+affectations. On obtient un histogramme $\mathbf{h}\in\mathbb{R}^K$,
+normalisé en $L_1$ afin de s'affranchir du nombre total de points-clés
+détectés~:
+\begin{equation}
+    h_w = \frac{1}{|\mathcal{P}|}\sum_{p\,\in\,\mathcal{P}}
+          \mathbb{1}\!\left[\,\text{mot}(p) = w\,\right],
+    \qquad w = 1,\dots,K,
+    \label{eq:bovw}
+\end{equation}
+où $\mathcal{P}$ est l'ensemble des points-clés de l'image et
+$\text{mot}(p)$ le mot visuel assigné au point $p$.
+
+Ce recours à BoVW est \emph{indispensable} pour plusieurs raisons~:
+\begin{itemize}
+    \item il fournit un descripteur de \textbf{taille fixe} ($K=256$),
+    donc directement comparable par les distances vectorielles de la
+    Section~\ref{subsec:metrics} et indexable au même titre que les
+    autres descripteurs~;
+    \item il rend l'encodage \textbf{homogène} entre SIFT (vecteurs
+    flottants de dimension $128$) et ORB (vecteurs binaires de
+    $32$~octets), tous deux projetés dans un même espace de
+    dimension~$K$~;
+    \item il \textbf{compacte} fortement la représentation et ramène la
+    recherche à un coût \emph{linéaire}, là où le \textit{matching}
+    point-à-point direct est quadratique et prohibitif
+    ($\sim 35$~s/requête pour SIFT, cf.
+    Section~\ref{subsec:results_part1})~;
+    \item l'histogramme étant insensible à l'ordre et au nombre des
+    points-clés, il confère une certaine robustesse aux occlusions
+    partielles et aux variations de point de vue.
+\end{itemize}
+La contrepartie est la perte de l'\emph{information spatiale}~: le
+«~sac~» ignore la position relative des motifs dans l'image, ce qui
+limite le pouvoir discriminant de SIFT/ORB-BoVW sur la tâche fine
+marque/modèle (cf. Section~\ref{subsec:results_part1}).
 
 Les descripteurs de couleur (histogrammes RGB/HSV) et de texture pure
 (GLCM, LBP) ont été écartés~: la couleur d'une voiture n'est pas
@@ -311,7 +365,15 @@ des descripteurs déjà $L_2$-normalisés, elle est rigoureusement
 équivalente à la distance euclidienne au carré, à un facteur près. Les
 divergences $\chi^2$ et de Bhattacharyya sont quant à elles spécialement
 conçues pour comparer des \emph{distributions} et conviennent donc bien
-aux histogrammes BoVW de SIFT et ORB.
+aux histogrammes BoVW de SIFT et ORB. En revanche, elles ne sont
+\emph{pas} adaptées aux embeddings profonds, dont les composantes
+peuvent être négatives~: leur application suppose alors de prendre la
+valeur absolue des coordonnées, ce qui détruit l'information de signe et
+prive le classement de fondement sémantique. Pour les descripteurs
+ConvNeXt et DINOv2, seules les distances euclidienne et cosinus sont
+donc pertinentes. Le moteur laisse néanmoins les quatre mesures
+sélectionnables pour tout descripteur, à des fins de comparaison
+expérimentale et pédagogique.
 
 \paragraph{Matching de points-clés.}
 Pour les baselines SIFT et ORB sans agrégation BoVW (notebook
@@ -607,7 +669,7 @@ ce qui valide la robustesse des descripteurs profonds appris.
 
 \newpage
 %% Marie
-\section{Moteur de recherche multi modal}
+\section{Moteur de recherche multimodal}
 \label{sec:part2}
 \subsection{Introduction et motivation}
  
@@ -961,7 +1023,7 @@ OpenCLIP ViT-B/32 (LAION-2B)  & 0.388     & 0.640     & 0.735     & 0.4953
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.55\linewidth]{figures/pr_comparaison.png}
-    \caption{Comparaison de Clip Open AI et Open Clip LAION sur le dataset}
+    \caption{Comparaison de CLIP OpenAI et OpenCLIP LAION sur le dataset}
     \label{fig:comparaison_clip_AI}
 \end{figure}
  
@@ -1049,7 +1111,7 @@ là où le modèle OpenAI peut parfois privilégier l'un des éléments
 sémantiques au détriment des autres.
 Cela reflète la richesse des descriptions textuelles dans LAION-2B,
 qui a exposé le modèle à un vocabulaire relationnel et
-compositionnnel plus étendu.
+compositionnel plus étendu.
  
 Pour les requêtes visuellement ambiguës ou abstraites,
 aucun des deux modèles ne produit de résultats entièrement
@@ -1098,31 +1160,31 @@ Plusieurs enseignements peuvent être dégagés :
 
 %% Marie
 \subsection{Interface Web}
-Afin de créer notre interface web, nous avons écris deux fichiers .html nommés comme suit : 
+Afin de créer notre interface web, nous avons écrit deux fichiers .html nommés comme suit :
 \begin{itemize}
     \item index.html gère la page du moteur de recherche multimodal. 
-    \item index2.html gère la page du moteur de recherche d'image uni-modal à deux niveaux. 
+    \item index2.html gère la page du moteur de recherche d'image unimodal à deux niveaux.
 \end{itemize}
 \subsubsection{Manuel d'utilisation}
 \subsubsection*{Moteur de recherche multimodal}
 La page d'accueil se présente comme suit (Figure \ref{fig:page_Accueil_index}). 
 Dans celle-ci, nous pouvons choisir d'entrer un texte, et d'avoir des images correspondantes à ce texte, d'entrer une image et d'avoir des images correspondantes ou alors d'entrer une image et d'avoir une description textuelle correspondante. \newline 
 
-Lorsque nous souhaitons passer d'une image à une image ou à un texte, nous avons soit le choix d'entrer une image de la base de données d'entraînement, à gauche, ou d'entrer notre propre image, à droite. Pour entrer une image personnalisée, il suffit de cliquer sur "\textit{Choisir un fichier}", et la page ouvre directement l'explorateur de fichier afin de pouvoir sélectionner notre image. \newline 
-Après avoir entrer une image, nous pouvons la visualiser afin de savoir quelle image a bien été rentrée dans le site. \newline 
+Lorsque nous souhaitons passer d'une image à une image ou à un texte, nous avons soit le choix d'entrer une image de la base de données d'entraînement, à gauche, ou d'entrer notre propre image, à droite. Pour entrer une image personnalisée, il suffit de cliquer sur "\textit{Choisir un fichier}", et la page ouvre directement l'explorateur de fichiers afin de pouvoir sélectionner notre image. \newline
+Après avoir entré une image, nous pouvons la visualiser afin de savoir quelle image a bien été rentrée dans le site. \newline
 
 Finalement, le résultat est généré après avoir cliqué sur \textit{Lancer la recherche}. \newline 
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.9\linewidth]{Autres/multimodal_page_accueil.png}
-    \caption{Page d’accueil de la recherche mutlimodal}
+    \caption{Page d’accueil de la recherche multimodale}
     \label{fig:page_Accueil_index}
 \end{figure}
 
 Voici un exemple pour la recherche Texte $\rightarrow$ Images : \newline 
 
-Nous avons tester notre modèle sur deux phrases : "A dog running down the beach" et "Un chien qui court sur la plage". Dans les deux cas, on cherche à retrouver 5 images semblabes. \newline 
+Nous avons testé notre modèle sur deux phrases : "A dog running down the beach" et "Un chien qui court sur la plage". Dans les deux cas, on cherche à retrouver 5 images semblables. \newline
 Pour la phrase en anglais, nous avons obtenu le résultat suivant (Figures \ref{fig:exemple1.1} et \ref{fig:exemple1.2}). 
 \begin{figure}[H]
     \centering
@@ -1151,17 +1213,17 @@ Pour la phrase en français, nous avons obtenu le résultat qui suit (Figures \r
 \end{figure}
 Nous pouvons voir que sur la Figure \ref{fig:exemple2.2}, aucune courbe de précision et rappel ne s'affiche car la phrase, en français, ne fait pas partie des phrases d'entraînement du modèle anglais. Tandis que la même phrase en anglais fait partie du corpus d'entraînement. \newline 
 
-Voici un exemple pour la recherche Image $\rightarrow$ Images et Images $\rightarrow$ Textes: \newline 
+Voici un exemple pour la recherche Image $\rightarrow$ Images et Image $\rightarrow$ Texte~: \newline
 
 Si je choisis d'insérer une image, la visualisation de celle-ci est directement disponible en dessous du fichier sélectionné (Figure \ref{fig:exemple3.1}), et il suffit d'écrire le nombre d'images et de textes à associer avant de lancer la recherche. 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\linewidth]{Autres/exemple3.1.png}
-    \caption{Enter Caption}
+    \caption{Visualisation de l'image requête sélectionnée}
     \label{fig:exemple3.1}
 \end{figure}
 
-Nous pouvons voir le résultat de la recherche Image $\rightarrow$ Images sur la Figure \ref{fig:image_to_image}. Pour cette méthode, aucune courbe de rappel et de précision est disponible puisque les images téléchargées sont "inconnues" au corpus initial d'entraînement. 
+Nous pouvons voir le résultat de la recherche Image $\rightarrow$ Images sur la Figure \ref{fig:image_to_image}. Pour cette méthode, aucune courbe de rappel et de précision n'est disponible puisque les images téléchargées sont "inconnues" au corpus initial d'entraînement. 
 
 \begin{figure}[H]
     \centering
@@ -1170,7 +1232,7 @@ Nous pouvons voir le résultat de la recherche Image $\rightarrow$ Images sur la
     \label{fig:image_to_image}
 \end{figure}
 
-Le résultat de la recherche Image $\rightarrow$ Texte est visible sur la Figure \ref{fig:image_to_texts}. Pour cette méthode, aucune courbe de rappel et de précision est disponible.
+Le résultat de la recherche Image $\rightarrow$ Texte est visible sur la Figure \ref{fig:image_to_texts}. Pour cette méthode, aucune courbe de rappel et de précision n'est disponible.
 
 \begin{figure}[H]
     \centering
@@ -1179,24 +1241,24 @@ Le résultat de la recherche Image $\rightarrow$ Texte est visible sur la Figure
     \label{fig:image_to_texts}
 \end{figure}
 
-\subsubsection*{Moteur de recherche d'image uni modal à deux niveaux}
-Lorsque nous transvasons sur la page de recherche unimodale, nous pouvons observer la page suivante (Figures \ref{fig:unimodalacceuil1} et \ref{fig:unimodalacceuil2}) : 
+\subsubsection*{Moteur de recherche d'image unimodal à deux niveaux}
+Lorsque nous passons sur la page de recherche unimodale, nous pouvons observer la page suivante (Figures \ref{fig:unimodalacceuil1} et \ref{fig:unimodalacceuil2}) : 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\linewidth]{Autres/unimodal_accueil1.png}
-    \caption{Page de recherche d'image uni modal (1)}
+    \caption{Page de recherche d'image unimodal (1)}
     \label{fig:unimodalacceuil1}
 \end{figure}
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\linewidth]{Autres/unimodal_accueil_2.png}
-    \caption{Page de recherche d'image uni modal (2)}
+    \caption{Page de recherche d'image unimodal (2)}
     \label{fig:unimodalacceuil2}
 \end{figure}
 
-Dans cette page, nous pouvons soit rechercher une image de la base de données, soit insérer notre propre image. Ensuite, il est demandé de choisir les descripteurs parmi la liste des 6 descripteurs proposés, sachant qu'on peut sélectionner plusieurs descripteurs, et au maximum tous les descripteurs. Par après, il faut sélectionner une seule métrique. Lorsqu'une métrique est sélectionnée, les autres ne sont plus sélectionnables. Ensuite, on indique le top d'élément que l'on souhaite récupérer. Finalement, on peut choisir si l'on souhaite visualiser les descripteurs (en cliquant sur le bouton \textit{"Visualisation 3D (UMap)"}) ou non. \newline 
+Dans cette page, nous pouvons soit rechercher une image de la base de données, soit insérer notre propre image. Ensuite, il est demandé de choisir les descripteurs parmi la liste des 6 descripteurs proposés, sachant qu'on peut sélectionner plusieurs descripteurs, et au maximum tous les descripteurs. Par après, il faut sélectionner une seule métrique. Lorsqu'une métrique est sélectionnée, les autres ne sont plus sélectionnables. Ensuite, on indique le nombre d'éléments que l'on souhaite récupérer. Finalement, on peut choisir si l'on souhaite visualiser les descripteurs (en cliquant sur le bouton \textit{"Visualisation 3D (UMap)"}) ou non. \newline 
 
-Nous avons représenté un exemple ci-dessous (Figures \ref{fig:ex_uni_1} à \ref{fig:ex_uni_5}), où nous avons pris une image de la base de donnée, avec comme descripteur ORB, associé à la métrique Cosinus, avec un top 14 et la visualisation des métriques disponible. 
+Nous avons représenté un exemple ci-dessous (Figures \ref{fig:ex_uni_1} à \ref{fig:ex_uni_5}), où nous avons pris une image de la base de données, avec comme descripteur ORB, associé à la métrique Cosinus, avec un top 14 et la visualisation des descripteurs disponible.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\linewidth]{Autres/exemple_uni_1.1.png}
@@ -1231,7 +1293,7 @@ Les résultats sont les suivants :
     \label{fig:ex_uni_5}
 \end{figure}
 
-Lors de la visualisation en 3D, nous pouvons choisir un des descripteurs afin de voir sur la map interactive les différentes classes. \newline 
+Lors de la visualisation en 3D, nous pouvons choisir un des descripteurs afin de voir sur la carte interactive les différentes classes. \newline
 La visualisation des descripteurs en 3D permet de visualiser comment l'information est ordonnée dans l'espace par le descripteur choisi. Le fait d'avoir un cluster pour chaque classe montre que le modèle a appris quelque chose. \newline
 
 Comme le modèle de recherche multimodal, lorsque nous insérons une image qui n'appartient pas au set d'entraînement, nous n'obtenons pas de résultats pour la courbe de rappel et de précision. 
@@ -1325,7 +1387,14 @@ fonctions du module \texttt{part1\_unimodal.search}~:
 Dans les deux cas, la réponse JSON renvoie une liste
 \texttt{results = [\{filename, score\}, \dots]} accompagnée d'un objet
 \texttt{pr\_curve} contenant les vecteurs \emph{recall}, \emph{precision}
-et la valeur d'\textit{Average Precision} pour la requête. Le front-end
+et la valeur d'\textit{Average Precision} pour la requête. La sémantique
+du champ \texttt{score} dépend du nombre de descripteurs sélectionnés,
+et un champ \texttt{score\_type} l'indique explicitement~: pour une
+recherche \emph{mono-descripteur}, le score est la \textbf{similarité}
+du descripteur ($1{,}0$ pour un appariement parfait)~; pour une
+recherche \emph{multi-descripteurs}, c'est le score de fusion
+\textit{RRF} (Eq.~\eqref{eq:rrf}), un score de classement borné par
+$|\mathcal{F}|/(c+1)$ dont seul l'ordre est interprétable. Le front-end
 trace alors la courbe avec \textit{Plotly} et affiche les vignettes
 récupérées via \texttt{/cars\_dataset/<name>}.
 
@@ -1371,10 +1440,13 @@ de checkpoint, sans logique additionnelle dans le code de recherche.
 \paragraph{Conteneurisation Docker.}
 L'application est entièrement conteneurisée via le \texttt{Dockerfile}
 présent à la racine du dépôt. L'image est construite à partir de
-\texttt{python:3.11-slim} pour minimiser la taille~; seules trois
-dépendances système sont installées via \texttt{apt-get} (\texttt{git}
-pour récupérer le paquet \textit{CLIP} d'OpenAI, \texttt{libgl1} et
-\texttt{libglib2.0-0} pour les bindings OpenCV). Les dépendances Python
+\texttt{python:3.11-slim} pour minimiser la taille~; quatre
+dépendances système sont installées via \texttt{apt-get}~: \texttt{git}
+(pour récupérer le paquet \textit{CLIP} d'OpenAI, déclaré comme
+dépendance Git dans \texttt{pyproject.toml}), \texttt{build-essential}
+(compilation des extensions natives lors de l'installation des paquets),
+ainsi que \texttt{libgl1} et \texttt{libglib2.0-0} (bibliothèques
+requises par les \textit{bindings} OpenCV). Les dépendances Python
 sont résolues par \texttt{uv}, gestionnaire de paquets compatible
 \texttt{pip} qui synchronise l'environnement système à partir de
 \texttt{pyproject.toml} et du \textit{lock file} \texttt{uv.lock}~:
@@ -1382,12 +1454,15 @@ sont résolues par \texttt{uv}, gestionnaire de paquets compatible
 RUN pip install --no-cache-dir uv \
  && uv pip install --system -r pyproject.toml
 \end{verbatim}
-Une fois les dépendances installées, le code source (\texttt{app.py},
-\texttt{src/}, \texttt{Site\_Internet/}) ainsi que les artefacts
-pré-calculés (\texttt{models/}, \texttt{results/}, \texttt{data/}) sont
-copiés dans l'image. L'image expose le port \textbf{5000}
-(\texttt{EXPOSE 5000}) et démarre Flask via la commande
-\texttt{python app.py}, qui appelle
+Une fois les dépendances installées, seul le code source
+(\texttt{app.py}, \texttt{src/}, \texttt{Site\_Internet/}) est copié
+dans l'image. Les artefacts volumineux (\texttt{models/} et
+\texttt{results/}) ainsi que les corpus (\texttt{data/}) ne sont
+\emph{délibérément pas} embarqués~: ils sont fournis à l'exécution sous
+forme de volumes montés via \texttt{docker-compose.yml}, ce qui maintient
+l'image légère et découple le code de ses données. L'image expose le
+port \textbf{5000} (\texttt{EXPOSE 5000}) et démarre Flask via la
+commande \texttt{python app.py}, qui appelle
 \texttt{app.run(host=\textquotesingle 0.0.0.0\textquotesingle{}, port=5000, debug=False)}
 afin d'écouter sur toutes les interfaces.
 
@@ -1446,21 +1521,27 @@ projet, l'application est destinée à une démonstration ponctuelle et la
 liste précédente couvre les vecteurs les plus critiques.
 
 \paragraph{Déploiement.}
-Le déploiement se fait en deux commandes une fois Docker installé sur
-le serveur cible~:
+Le déploiement est orchestré par le fichier \texttt{docker-compose.yml},
+qui construit l'image, monte les volumes nécessaires et redémarre
+automatiquement le conteneur en cas d'arrêt (\texttt{restart:
+unless-stopped}). Une fois Docker installé sur le serveur cible, une
+seule commande suffit~:
 \begin{verbatim}
-docker build -t mir-app .
-docker run -d -p 80:5000 --name mir mir-app
+docker compose up -d --build
 \end{verbatim}
-Le mappage \texttt{-p 80:5000} expose l'application sur le port HTTP
-standard. L'image construite ($\sim 4$~GB, dominée par les
-\textit{checkpoints} \texttt{.pth} de la grille de descripteurs et par
-le corpus \textit{Cars}/\textit{Flickr8k} embarqué) reste compatible
-avec un déploiement sur les services gratuits suggérés dans l'énoncé
+Le service expose le port \textbf{5000} et monte trois volumes~:
+\texttt{./data} et \texttt{./models} en lecture seule, \texttt{./results}
+en lecture/écriture, auxquels s'ajoute un volume nommé dédié au cache
+\textit{Hugging Face}. Cette séparation entre l'image (le code, qui
+reste léger) et les données (montées en volumes) évite de reconstruire
+l'image à chaque mise à jour des descripteurs et garde l'empreinte du
+conteneur réduite. L'application reste ainsi compatible avec un
+déploiement sur les services gratuits suggérés dans l'énoncé
 (Oracle Free Tier, Render, Railway). Pour un déploiement en production
-plus exigeant, il serait préférable de découpler les artefacts
-volumineux dans un volume persistant ou un \textit{object store}
-(par exemple S3) plutôt que de les empaqueter dans l'image.
+plus exigeant, il serait préférable d'externaliser les artefacts
+volumineux (\textit{checkpoints} \texttt{.pth} et corpus) dans un
+\textit{object store} (par exemple S3) plutôt que de dépendre de
+volumes locaux.
 
 \newpage
 \section{Conclusion}
@@ -1516,8 +1597,9 @@ du cadre de ce projet~:
     descripteur~;
 
     \item Affiner CLIP par \textit{fine-tuning} contrastif sur
-    \textit{Flickr8K} ou comparer plus systématiquement à BLIP/OpenCLIP
-    pour quantifier le gain attendu sur ce domaine spécifique~;
+    \textit{Flickr8K}, ou élargir la comparaison au-delà d'OpenCLIP à
+    d'autres familles de modèles vision-langage (BLIP, SigLIP) pour
+    quantifier le gain attendu sur ce domaine spécifique~;
 
     \item Industrialiser le déploiement en externalisant les
     \textit{checkpoints} et le corpus dans un \textit{object store},
